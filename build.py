@@ -13,13 +13,14 @@ import json
 import re
 import urllib.parse
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from html import escape
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).parent
 SITE = ROOT / "site"
-LA = timezone(timedelta(hours=-8))  # only used for "today"; screening times carry their own offset
+LA = ZoneInfo("America/Los_Angeles")  # handles daylight saving; used for "today" and the Updated time
 NAME = "GOODTIMES"
 TAGLINE = "To Live and Watch Movies in LA"
 # While friends test the site, ask search engines not to list it. Set to False at launch.

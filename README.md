@@ -33,3 +33,12 @@ Publish the `netlify/` folder. For automatic builds, use `python3 scrape.py && p
 build command and `netlify` as the publish directory.
 
 While the site is a preview, `PREVIEW = True` in `build.py` asks search engines not to list it.
+
+## Daily refresh
+
+`.github/workflows/daily-refresh.yml` asks Netlify to rebuild every day at 7:00 a.m. Los Angeles time,
+including across daylight saving. It needs a repository secret named `NETLIFY_BUILD_HOOK` (Netlify →
+Site configuration → Build & deploy → Build hooks). To test it, use **Actions → Daily refresh → Run workflow**.
+
+If most theaters can't be reached, `scrape.py` exits with an error so the build fails and Netlify keeps
+the last good version live.

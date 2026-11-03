@@ -54,6 +54,12 @@ def main():
                 errors.append(theater["id"])
                 print(f"{theater['name']}: FAILED ({e})", file=sys.stderr)
 
+    # If most theaters failed (say, the build server lost its connection), stop with an error instead of
+    # publishing a nearly empty site. A failed Netlify build leaves the last good version live.
+    total = len(theaters) + len(errors)
+    if not screenings or len(errors) > total // 2:
+        sys.exit(f"Only {len(theaters)} of {total} theaters scraped; not publishing this update.")
+
     screenings = dedupe(screenings, {t["id"] for t in theaters if t.get("specials_only")})
     screenings.sort(key=lambda s: (s["start"], s["theater"], s["title"]))
     out = Path(__file__).parent / "data" / "listings.json"
