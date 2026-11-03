@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 40 200 200" role="img" aria-label="GOODTIMES">
+  <!-- The G from logo/goodtimes.svg, centred in a square for the browser tab icon. -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#B8344A" stroke-width="44" d="M 132.9 92.0 A 62 78.0 0 1 0 145.4 150.9 L 94.0 150.9"/>
+    <path stroke="#E07C8C" stroke-width="36" d="M 132.9 92.0 A 62 78.0 0 1 0 145.4 150.9 L 94.0 150.9"/>
+    <path stroke="#F3B3BD" stroke-width="24" d="M 132.9 92.0 A 62 78.0 0 1 0 145.4 150.9 L 94.0 150.9"/>
+    <path stroke="#E07C8C" stroke-width="16" d="M 132.9 92.0 A 62 78.0 0 1 0 145.4 150.9 L 94.0 150.9"/>
+    <path stroke="#FFF1F3" stroke-width="5" d="M 132.9 92.0 A 62 78.0 0 1 0 145.4 150.9 L 94.0 150.9"/>
+  </g>
+</svg>

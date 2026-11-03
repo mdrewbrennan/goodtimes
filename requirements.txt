@@ -1,0 +1,2 @@
+# GOODTIMES uses only the Python standard library (Python 3.9 or newer).
+# Nothing to install. This file is here so hosts like Netlify detect a Python project.
