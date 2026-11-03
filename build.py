@@ -225,8 +225,13 @@ def guests_html(film):
 
 
 def poster_html(film, size="small"):
-    src = (film.get("tmdb") or {}).get("poster")
-    return f'<img class="poster {size}" src="{escape(src)}" alt="" loading="lazy" decoding="async">' if src else ""
+    # TMDB's poster when the film matched; otherwise the image the theater publishes with its listing.
+    src = (film.get("tmdb") or {}).get("poster") or film.get("image")
+    if not src:
+        return ""
+    # A theater image that fails to load is removed, so the row falls back to its no-poster layout.
+    return (f'<img class="poster {size}" src="{escape(src)}" alt="" loading="lazy" decoding="async" '
+            f'referrerpolicy="no-referrer" onerror="this.closest(\'.has-poster\')?.classList.remove(\'has-poster\');this.remove()">')
 
 
 def slug(text):
@@ -363,7 +368,7 @@ def page(title, description, path, active, body, updated, script="", head="", in
 </div></header>
 {body}
 <footer><div class="wrap">
-  <span><b>{NAME}</b> · An Aggregate of Almost Every Indie and One-Night-Only Film Playing in L.A. Tonight</span>
+  <span><b>{NAME}</b> · Every indie and one-off film showings in L.A.</span>
   <span>Updated {updated}. Tickets are sold by each theater.</span>
   {TMDB_CREDIT if USES_TMDB else ""}
 </div></footer>

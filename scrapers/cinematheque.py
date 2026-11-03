@@ -12,7 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 
-from .common import blurb, clean, fetch, fetch_json, screening
+from .common import blurb, clean, fetch, fetch_json, og_image, screening
 from .veezi import la_offset
 
 API = "https://www.americancinematheque.com/wp-json/wp/v2/algolia_get_events"
@@ -53,6 +53,7 @@ def _details(url):
     info = {}
     try:
         page = fetch(url)
+        info["image"] = og_image(page)  # a landscape hero still; the site has no portrait poster
         bar = re.findall(r'eventDetailBar__item">(.*?)</li>', page, re.S)
         for item in bar:
             item = clean(re.sub(r"<[^>]+>", "", item))
@@ -98,7 +99,7 @@ def scrape(theater):
             theater, h["title"], f"{d.isoformat()}T{t:%H:%M}:00{la_offset(d, t.hour)}", h["url"],
             film_url=h["url"],
             year=info.get("year"), director=info.get("director"), runtime=info.get("runtime"),
-            blurb=info.get("blurb"), sold_out=info.get("sold_out", False),
+            blurb=info.get("blurb"), sold_out=info.get("sold_out", False), image=info.get("image"),
             special_event=not film,
         ))
     return out

@@ -11,7 +11,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 
-from .common import blurb, clean, fetch, screening
+from .common import blurb, clean, fetch, https_url, screening
 from .la_offset import la_iso
 
 BASE = "https://www.laemmle.com"
@@ -55,7 +55,11 @@ def _film_details(path):
     synopsis = re.search(r'field--name-field-synopsis[^>]*>(.*?)</div>', page, re.S)
     dur = re.search(r'field--name-field-duration.*?field--item">\s*(\d+)\s*<', page, re.S)
     names = re.findall(r'<span class="field--item">([^<]+)</span>', director.group(1)) if director else []
+    # the full-size poster upload; the only styled rendition on the page is a 150px thumbnail
+    poster = re.search(r'field--name-field-poster\b.*?<img[^>]*?\ssrc="([^"]+)"', page, re.S)
+    image = https_url(html.unescape(poster.group(1)), BASE) if poster else None
     return {
+        "image": image,
         "director": ", ".join(clean(n).rstrip(",") for n in names) or None,
         "blurb": blurb(synopsis.group(1)) if synopsis else None,
         "runtime": int(dur.group(1)) if dur else None,
@@ -94,7 +98,7 @@ def scrape(theater):
         out.append(screening(
             theater, f["title"], la_iso(when), url,
             film_url=BASE + path, runtime=f["runtime"] or det.get("runtime"),
-            director=det.get("director"), blurb=det.get("blurb"), sold_out=sold,
+            director=det.get("director"), blurb=det.get("blurb"), sold_out=sold, image=det.get("image"),
             special_event=bool(EVENT_TITLE.match(f["title"])),
         ))
     return out

@@ -86,7 +86,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 @media (max-width: 640px) {
   .venue { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .venue-head { position: static; flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 2px 10px; }
+  /* Pinned to the top while its films scroll by, then pushed off by the next theater's header. */
+  .venue-head, .listings .venue-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper);
+    padding-block: 10px 8px; border-bottom: 1px solid var(--rule);
+    box-shadow: -24px 0 0 var(--paper), 24px 0 0 var(--paper);  /* paint the side gutters too */
+    flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 2px 10px; }
   .venue-name { flex-basis: 100%; }
   .venue-meta { flex-direction: row; gap: 12px; }
 }

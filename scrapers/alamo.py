@@ -7,9 +7,10 @@ and status. The LA market currently has a single cinema (DTLA).
 """
 
 from datetime import datetime
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
-from .common import blurb, clean, fetch_json, screening
+from .common import blurb, clean, fetch_json, https_url, screening
 
 NOT_EVENTS = {"unrated"}  # event-type labels that describe the print, not an event
 
@@ -31,6 +32,17 @@ API = "https://drafthouse.com/s/mother/v2/schedule/market/"
 
 def _iso(local, tz):
     return datetime.fromisoformat(local).replace(tzinfo=ZoneInfo(tz)).isoformat()
+
+
+def _poster(show):
+    """First poster image, with its imgix query rewritten to a small portrait crop."""
+    uri = https_url(((show.get("posterImages") or [{}])[0] or {}).get("uri"))
+    if not uri:
+        return None
+    parts = urlsplit(uri)
+    query = [(k, v) for k, v in parse_qsl(parts.query) if k == "auto"] or [("auto", "compress")]
+    query += [("fit", "crop"), ("w", "240"), ("h", "360"), ("q", "75")]
+    return urlunsplit(parts._replace(query=urlencode(query)))
 
 
 def scrape(theater):
@@ -59,6 +71,7 @@ def scrape(theater):
             film_url,  # the site's showtime buttons have no deep link; the show page lists them
             film_url=film_url,
             blurb=text,
+            image=_poster(show),
             # Alamo labels its events (Q&As, movie parties, sing-alongs, fan screenings); plain shows have none.
             special_event=bool(label) and label.lower() not in NOT_EVENTS,
             sold_out=s["status"] == "SOLDOUT",

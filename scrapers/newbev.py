@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 from . import veezi
-from .common import blurb, clean, fetch, screening
+from .common import blurb, clean, fetch, https_url, og_image, screening
 
 SITE_TOKEN = "fmtswb0qqbym3de6c4bbsqj89m"
 TICKETS = f"https://ticketing.uswest.veezi.com/sessions/?siteToken={SITE_TOKEN}"
@@ -61,6 +61,7 @@ def _program(url):
     except Exception:
         return []
     films = []
+    fallback = og_image(page)
     for block in MOVIE.findall(page):
         title = re.search(r'<h2 class="movie__title">(.*?)</h2>', block, re.S)
         paras = re.findall(r"<p>(.*?)</p>", block.split('class="movie__details"')[0], re.S)
@@ -69,7 +70,9 @@ def _program(url):
         text = blurb(paras[0]) if paras else None
         if text and len(text) > 500:
             text = text[:497].rsplit(" ", 1)[0] + "..."
+        poster = re.search(r'<img[^>]*?\ssrc="([^"]+)"', block.split('class="movie__details"')[0])
         films.append({
+            "image": https_url(clean(poster.group(1))) if poster else fallback,
             "title": _text(title.group(1)) if title else None,
             "year": (re.match(r"\d{4}", details.get("Year", "")) or [None])[0],
             "director": details.get("Director") or None,
@@ -114,6 +117,7 @@ def scrape(theater):
                 director=info.get("director"),
                 runtime=info.get("runtime"),
                 blurb=info.get("blurb"),
+                image=info.get("image"),
                 sold_out=bool(sess_ and sess_["sold_out"]),
             ))
     return out

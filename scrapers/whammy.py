@@ -12,7 +12,7 @@ comedy + shorts night is kept as a special_event.
 import re
 from datetime import date, datetime
 
-from .common import clean, fetch, screening
+from .common import clean, fetch, og_image, screening
 from .la_offset import la_iso
 
 BASE = "https://www.whammyanalog.com"
@@ -80,7 +80,8 @@ def scrape(theater):
             continue
 
         url = BASE + href
-        paras = description(fetch(url))
+        event_page = fetch(url)
+        paras = description(event_page)
         text = " ".join(paras)
         if re.search(r"\bworkshop\b", text[:500], re.I):
             continue
@@ -103,5 +104,6 @@ def scrape(theater):
             film_url=film_url, year=year.group(1) if year else None,
             director=director.group(1).strip() if director else None,
             runtime=runtime, blurb=blurb, sold_out=sold_out,
-            special_event=bool(LIVE.search(title))))
+            special_event=bool(LIVE.search(title)),
+            image=og_image(event_page)))
     return out

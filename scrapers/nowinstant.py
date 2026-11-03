@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from .common import blurb, clean, fetch, screening
+from .common import blurb, clean, fetch, og_image, screening
 
 THEATERS = [
     {
@@ -47,12 +47,12 @@ def scrape(theater):
         tickets = TICKETS.search(page)
         runtime = RUNTIME.search(page)
         para = FIRST_P.search(page)
-        out.append(screening_row(theater, url, people, title, when, tickets, runtime, para))
+        out.append(screening_row(theater, url, people, title, when, tickets, runtime, para, og_image(page)))
     out.sort(key=lambda r: r["start"])
     return out
 
 
-def screening_row(theater, url, people, title, when, tickets, runtime, para):
+def screening_row(theater, url, people, title, when, tickets, runtime, para, image=None):
     return screening(
         theater,
         re.sub(r"<[^>]+>", "", title).replace("\xa0", " "),
@@ -62,4 +62,5 @@ def screening_row(theater, url, people, title, when, tickets, runtime, para):
         director=clean(people).replace("\xa0", " ") or None,
         runtime=int(runtime.group(1)) if runtime else None,
         blurb=blurb(para.group(1)) if para else None,
+        image=image,
     )

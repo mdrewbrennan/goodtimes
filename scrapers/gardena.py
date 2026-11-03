@@ -8,7 +8,7 @@ which returns every movie with dated sessionTimes, Veezi booking links and sold-
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from .common import blurb, fetch_json, screening
+from .common import blurb, fetch_json, https_url, screening
 
 THEATERS = [
     {
@@ -40,6 +40,7 @@ def scrape(theater):
         except (TypeError, ValueError):
             runtime = None
         text = blurb(m.get("synopsisShort"))
+        image = https_url(m.get("imageVerticalUrl"))
         is_event = not directors  # no director credited: live/community events (e.g. short-film club)
         for s in m.get("sessionTimes") or []:
             out.append(screening(
@@ -51,6 +52,7 @@ def scrape(theater):
                 director=", ".join(directors),
                 runtime=runtime,
                 blurb=text,
+                image=image,
                 sold_out=bool(s.get("isSoldOut")),
                 special_event=is_event and "club" in m["title"].lower(),
             ))

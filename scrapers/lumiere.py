@@ -11,7 +11,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 
-from .common import blurb, clean, fetch, screening
+from .common import blurb, clean, fetch, og_image, screening
 from .la_offset import la_iso
 
 LIST_URL = "https://lumierecinemala.com/tickets-by-film"
@@ -66,7 +66,7 @@ def _film_details(url):
     body = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", body, flags=re.S)
     segs = [clean(s) for s in re.split(r"<[^>]+>", body)]
     segs = [s for s in segs if s]
-    out = {}
+    out = {"image": og_image(page, "https://lumierecinemala.com")}
     for i, s in enumerate(segs):
         if re.fullmatch(r"\d+ min", s) and i + 1 < len(segs) and re.fullmatch(r"\d{4}", segs[i + 1]):
             out["year"] = segs[i + 1]
@@ -112,7 +112,7 @@ def scrape(theater):
         out.append(screening(
             theater, f["title"], la_iso(when), ticket,
             film_url=url, year=det.get("year"), director=det.get("director"),
-            runtime=f["runtime"], genres=det.get("genres"), blurb=det.get("blurb"),
+            runtime=f["runtime"], genres=det.get("genres"), blurb=det.get("blurb"), image=det.get("image"),
             special_event=bool(SPECIAL.search(f["title"])),
         ))
     return out

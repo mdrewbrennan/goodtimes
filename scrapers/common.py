@@ -43,6 +43,37 @@ def json_ld_nodes(page):
     return nodes
 
 
+META_TAG = re.compile(r'<meta\s[^>]*>', re.I)
+META_ATTR = re.compile(r'([\w:-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\')')
+
+
+def og_image(page_html, base=None):
+    """og:image (else twitter:image) URL from a page's <meta> tags, as an absolute https URL, or None."""
+    found = {}
+    for tag in META_TAG.findall(page_html or ""):
+        attrs = {k.lower(): html.unescape(a or b) for k, a, b in META_ATTR.findall(tag)}
+        key = (attrs.get("property") or attrs.get("name") or "").lower()
+        if key in ("og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src"):
+            found.setdefault(key.split(":")[0], attrs.get("content", "").strip())
+    for key in ("og", "twitter"):
+        url = found.get(key)
+        if url:
+            return https_url(url, base)
+    return None
+
+
+def https_url(url, base=None):
+    """Absolute https URL, or None if it can't be made into one."""
+    url = (url or "").strip()
+    if url.startswith("//"):
+        url = "https:" + url
+    elif url.startswith("/") and base:
+        url = base.rstrip("/") + url
+    elif url.startswith("http://"):
+        url = "https://" + url[7:]
+    return url if url.startswith("https://") else None
+
+
 def clean(text):
     return html.unescape(text or "").strip()
 
@@ -60,7 +91,8 @@ def runtime_minutes(duration):
 
 
 def screening(theater, title, start, ticket_url, *, film_url=None, year=None, director=None,
-              runtime=None, genres=None, blurb=None, sold_out=False, cancelled=False, special_event=False):
+              runtime=None, genres=None, blurb=None, sold_out=False, cancelled=False, special_event=False,
+              image=None):
     """One showing. start is an ISO 8601 string with the LA offset, e.g. 2026-11-03T19:30:00-08:00."""
     return {
         "theater": theater["id"],
@@ -76,4 +108,5 @@ def screening(theater, title, start, ticket_url, *, film_url=None, year=None, di
         "blurb": blurb,
         "sold_out": sold_out,
         "cancelled": cancelled,
+        "image": image,  # poster URL from the theater's own data (absolute https), a fallback for TMDB
     }

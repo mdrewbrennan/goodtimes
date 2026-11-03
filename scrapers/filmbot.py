@@ -8,7 +8,7 @@ also read the showtime buttons in the page HTML and merge the two, keyed by tick
 import re
 from datetime import datetime, timedelta
 
-from .common import blurb, clean, fetch, json_ld_nodes, runtime_minutes, screening
+from .common import blurb, clean, fetch, https_url, json_ld_nodes, runtime_minutes, screening
 from .la_offset import la_iso
 
 THEATERS = [
@@ -41,6 +41,23 @@ def spec(block, label):
     return clean(m.group(1)) if m else None
 
 
+def ld_image(node):
+    """The 'image' of a JSON-LD node (a string, a list, or an ImageObject) as an https URL, or None."""
+    img = (node or {}).get("image")
+    if isinstance(img, list):
+        img = img[0] if img else None
+    if isinstance(img, dict):
+        img = img.get("url")
+    return https_url(img) if isinstance(img, str) else None
+
+
+def block_image(block):
+    """The poster <img> of a show block (the one inside .show-poster, else the first <img>)."""
+    poster = re.search(r'class="show-poster.*?<img[^>]*?\ssrc="([^"]+)"', block, re.S) or \
+        re.search(r'<img[^>]*?\ssrc="([^"]+)"', block)
+    return https_url(clean(poster.group(1))) if poster else None
+
+
 def from_html(theater, page):
     """Screenings from the showtime buttons, for when the JSON-LD leaves some out."""
     out = []
@@ -50,6 +67,7 @@ def from_html(theater, page):
             continue
         runtime = re.search(r"(\d+)", spec(block, "Run Time") or "")
         fmt = spec(block, "Format")
+        image = block_image(block)
         about = re.search(r'<div class="show-content">(.*?)</div>', block, re.S)
         text = blurb(about.group(1)) if about else None
         if fmt and fmt.lower() != "digital":
@@ -61,7 +79,8 @@ def from_html(theater, page):
             out.append(screening(
                 theater, title.group(2), la_iso(datetime.combine(day, clock)), url,
                 film_url=title.group(1), year=spec(block, "Release Year"), director=spec(block, "Director"),
-                runtime=int(runtime.group(1)) if runtime else None, blurb=text, sold_out="sold-out" in cls))
+                runtime=int(runtime.group(1)) if runtime else None, blurb=text, sold_out="sold-out" in cls,
+                image=image))
     return out
 
 
@@ -95,12 +114,18 @@ def scrape(theater):
             sold_out=bool(offers) and all(o.get("availability", "").endswith("SoldOut") for o in offers),
             cancelled=ev.get("eventStatus", "").endswith("EventCancelled"),
             special_event=is_event,
+            image=ld_image(movie) or ld_image(ev),
         ))
 
     have = {s["ticket_url"] for s in out}
+    html_posters = {}
     for page in pages:
         for s in from_html(theater, page):
+            if s["image"] and s["film_url"]:
+                html_posters.setdefault(s["film_url"], s["image"])
             if s["ticket_url"] not in have:
                 have.add(s["ticket_url"])
                 out.append(s)
+    for s in out:  # a film whose JSON-LD had no image can still have a poster in the page HTML
+        s["image"] = s["image"] or html_posters.get(s["film_url"])
     return out
