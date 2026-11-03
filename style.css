@@ -1,3 +1,11 @@
+/* Inter, served from /fonts (the latin and latin-ext subsets of Google Fonts' variable Inter, OFL licensed). */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("/fonts/inter-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
 /* Layout: a white page with one centered column. Structure comes from type and hairline rules;
    #1B4A38 green appears only as text (links, showtimes, tags, venue names), never as a fill. */
 :root {
@@ -20,6 +28,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.
 a { color: inherit; }
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .wrap { max-width: 920px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .eyebrow { font: 500 12px/1.4 var(--sans); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0; }
 
 /* Masthead */
@@ -85,12 +94,32 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .film { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; padding: 14px 0; }
 .film + .film { border-top: 1px dashed var(--rule); }
 .film-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.film h3 { margin: 0; font: 600 20px/1.25 var(--sans); letter-spacing: -0.015em; text-wrap: balance; }
-.film h3 a { text-decoration: none; }
-.film h3 a:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.film h4 { margin: 0; font: 600 20px/1.25 var(--sans); letter-spacing: -0.015em; text-wrap: balance; }
+.film h4 a { text-decoration: none; }
+.film h4 a:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
 .meta { margin: 0; font: 400 13px var(--sans); color: var(--muted); }
 .film .blurb { margin: 0; font-size: 14.5px; color: var(--muted); max-width: 62ch; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .times { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 220px; }
+.film.has-poster { grid-template-columns: 64px minmax(0, 1fr) auto; }
+.poster { display: block; background: var(--wash); border-radius: 4px; object-fit: cover; }
+.poster.small { width: 64px; height: 96px; }
+.poster.large { width: 100%; max-width: 280px; aspect-ratio: 2 / 3; height: auto; }
+.film:target { background: var(--wash); box-shadow: -12px 0 0 var(--wash), 12px 0 0 var(--wash); border-radius: 2px; }
+a.tag { text-decoration: none; }
+a.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
+.rating { color: inherit; text-decoration: none; white-space: nowrap; }
+.rating:hover { text-decoration: underline; text-underline-offset: 2px; }
+.guests { margin: 0; font: 500 14px/1.45 var(--sans); color: var(--ink); max-width: 62ch; }
+
+/* Trailer, add to calendar and share, under each film */
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 2px; }
+.act { font: 500 13px var(--sans); color: var(--green); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: none; list-style: none; }
+.act:hover { text-decoration: underline; text-underline-offset: 3px; }
+.act-menu { position: relative; }
+.act-menu summary::-webkit-details-marker { display: none; }
+.act-menu .menu { width: auto; min-width: 180px; padding: 4px; }
+.act-menu .menu a { display: block; padding: 7px 10px; border-radius: 8px; font-size: 14px; text-decoration: none; white-space: nowrap; }
+.act-menu .menu a:hover { background: var(--wash); }
 
 /* Homepage: upcoming special events */
 .upcoming { margin-top: 64px; }
@@ -135,6 +164,49 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .days a:hover { background: var(--wash); }
 .days a.has-special::after { content: "•"; display: block; height: 6px; line-height: 6px; font-size: 14px; color: var(--green); }
 
+.menu-group + .menu-group { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 4px; }
+.group-head { display: block; width: 100%; text-align: left; font: 500 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--green); background: none; border: 0; padding: 8px 10px 4px; cursor: pointer; }
+.group-head:hover { text-decoration: underline; text-underline-offset: 3px; }
+.venue-meta .dist { color: var(--ink); }
+.chip.file { display: inline-flex; align-items: center; cursor: pointer; }
+.chip.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.chip.file:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+.watch-panel { font-size: 14px; color: var(--muted); max-width: 70ch; }
+.watch-panel p { margin: 0 0 8px; }
+.watch-panel #watch-status { color: var(--ink); }
+.watch-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.near-status { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Homepage search */
+.home-search { display: flex; gap: 8px; margin-top: 18px; max-width: 560px; }
+.home-search .search { flex: 1 1 auto; max-width: none; margin: 0; }
+
+/* A shared screening's page */
+.event { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 40px 8px; }
+.event.has-poster { grid-template-columns: 240px minmax(0, 1fr); }
+.event-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.event h1 { margin: 0; font: 600 clamp(30px, 5vw, 44px)/1.08 var(--sans); letter-spacing: -0.03em; text-wrap: balance; }
+.event h1 a { text-decoration: none; }
+.event .times { justify-content: flex-start; max-width: none; margin-top: 6px; }
+.event .eyebrow a { text-decoration: none; color: var(--green); }
+.blurb.full { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+.event-foot { margin: 16px 0 0; }
+
+/* About */
+.prose { max-width: 64ch; margin-top: 28px; }
+.prose h2 { font: 600 22px/1.2 var(--sans); letter-spacing: -0.02em; margin: 40px 0 8px; }
+.prose h3 { font: 500 12px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 4px; }
+.prose p { margin: 0 0 12px; }
+.prose a { color: var(--green); }
+.about-theaters { list-style: none; margin: 0; padding: 0; }
+.about-theaters li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.about-theaters li > a { font-weight: 600; text-decoration: none; color: var(--ink); }
+.about-theaters .hood { font-size: 13px; }
+.about-theaters .feed { margin-left: auto; }
+.feed-url { font-size: 12px; color: var(--faint); word-break: break-all; }
+.about-theaters .feed-url { display: none; }
+.feed-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+
 .listings { padding-block: 0 80px; }
 .to-top { position: fixed; z-index: 15; right: max(20px, calc(env(safe-area-inset-right, 0px) + 12px)); bottom: max(84px, calc(env(safe-area-inset-bottom, 0px) + 76px)); font: 500 14px var(--sans); color: var(--green); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .08); }
 .to-top:hover { border-color: var(--ink); }
@@ -155,9 +227,18 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   .logo-svg { flex: none; }
   .site-nav { gap: 20px; }
   .film { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .film.has-poster { grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; }
+  .film.has-poster .times { grid-column: 2; }
+  .poster.small { width: 56px; height: 84px; }
+  .event.has-poster { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .poster.large { max-width: 180px; }
+  .about-theaters .feed { margin-left: 0; flex-basis: 100%; }
   .times { justify-content: flex-start; max-width: none; }
-  .film h3 { font-size: 18px; }
+  .film h4 { font-size: 18px; }
   .upcoming-list a { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
   .upcoming-list .where { grid-column: 2; text-align: left; margin-top: -6px; }
   .search { max-width: none; margin-left: 0; flex-basis: 100%; }
+  /* The filters wrap to several rows on a phone, too tall to keep pinned; they scroll away (Back to top returns). */
+  .controls { position: static; }
+  html { scroll-padding-top: 16px; }
 }

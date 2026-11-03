@@ -10,7 +10,9 @@ import json
 import re
 import urllib.request
 
-USER_AGENT = "Mozilla/5.0 (compatible; LeftOnScene/0.1; proof of concept)"
+# Says who's asking, so a theater can see what the requests are for and how to reach us.
+USER_AGENT = ("Mozilla/5.0 (compatible; GOODTIMES-LA/1.0; daily LA screening listings; "
+              "+https://github.com/mdrewbrennan/goodtimes)")
 LD_JSON = re.compile(r'<script[^>]*application/ld\+json[^>]*>(.*?)</script>', re.S)
 DURATION = re.compile(r"PT(?:(\d+)H)?(?:(\d+)M)?")
 

@@ -10,6 +10,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import tmdb
 from scrapers import (alamo, arts2220, cinematheque, filmbot, gardena, laemmle, landmark, lumiere,
                       muscle, newbev, nowinstant, prs, vista, whammy)
 
@@ -62,6 +63,7 @@ def main():
 
     screenings = dedupe(screenings, {t["id"] for t in theaters if t.get("specials_only")})
     screenings.sort(key=lambda s: (s["start"], s["theater"], s["title"]))
+    tmdb.enrich(screenings)  # posters, ratings, trailers and genres, when a TMDB key is set
     out = Path(__file__).parent / "data" / "listings.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({
