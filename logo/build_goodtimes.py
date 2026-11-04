@@ -99,24 +99,50 @@ def layout(word="GOODTIMES"):
     return x - GAP, glyphs
 
 
-def svg(layers, pad=30, bg="#FFFFFF"):
+# Marquee animation, one entry per letter of GOODTIMES: (blip cycle s, start offset s, sways).
+# Cycles are mismatched so the letters never fall into a visible rhythm; the I is the bad tube.
+FLICKER = [(22, -3, False), (26, -17, True), (34, -1, False), (19, -9, False),
+           (38, -24, True), (0, 0, False), (24, -13, False), (30, -6, True), (21, -19, False)]
+FAULTY = 5
+NEON_CSS = """
+.gt-tubes { animation: gt-glow 4.5s ease-in-out infinite; }
+.gt-l { animation: gt-blip var(--d) linear var(--o) infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.gt-l.gt-sway { animation: gt-blip var(--d) linear var(--o) infinite, gt-sway 5.5s ease-in-out var(--o) infinite; }
+.gt-l.gt-faulty { animation: gt-faulty 7s linear -2s infinite; }
+@keyframes gt-glow { 0%, 100% { filter: drop-shadow(0 0 3px rgba(224, 96, 120, .35)); } 50% { filter: drop-shadow(0 0 9px rgba(224, 96, 120, .6)); } }
+@keyframes gt-blip { 0%, 91%, 91.6%, 92.3%, 100% { opacity: 1; } 91.3% { opacity: .3; } 91.9% { opacity: .55; } }
+@keyframes gt-faulty { 0%, 18%, 19.4%, 21%, 24.6%, 58%, 69.4%, 71%, 100% { opacity: 1; } 18.7% { opacity: .25; } 20% { opacity: .35; } 21.6%, 24% { opacity: .3; } 58.6%, 68.8% { opacity: .22; } 70.2% { opacity: .5; } }
+@keyframes gt-sway { 0%, 100% { transform: none; } 30% { transform: rotate(.8deg) translateY(-1px); } 65% { transform: rotate(-.6deg); } }
+@media (prefers-reduced-motion: reduce) { .gt-tubes, .gt-l, .gt-l.gt-sway, .gt-l.gt-faulty { animation: none; } }
+"""
+
+
+def svg(layers, pad=30, bg="#FFFFFF", animate=False):
     width, glyphs = layout()
     vw, vh = width + 2 * pad, 200 + 2 * pad
-    d = " ".join(
-        f'<path transform="translate({x + pad:.1f} {pad - 40})" d="{p}"/>'
-        for x, paths in glyphs for p in paths
-    )
-    groups = "\n  ".join(
-        f'<g stroke="{c}" stroke-width="{w}">{d}</g>' for w, c in layers
-    )
+    letters = []
+    for i, (x, paths) in enumerate(glyphs):
+        d = "".join(f'<path d="{p}"/>' for p in paths)
+        tube = "".join(f'<g stroke="{c}" stroke-width="{w}">{d}</g>' for w, c in layers)
+        attrs = ""
+        if animate:
+            cycle, offset, sways = FLICKER[i]
+            cls = "gt-l gt-faulty" if i == FAULTY else "gt-l gt-sway" if sways else "gt-l"
+            attrs = f' class="{cls}" style="--d:{cycle}s;--o:{offset}s"'
+        letters.append(f'<g transform="translate({x + pad:.1f} {pad - 40})"><g{attrs}>{tube}</g></g>')
+    style = f"  <style>{NEON_CSS}  </style>\n" if animate else ""
+    body = "\n    ".join(letters)
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {vw:.0f} {vh}" role="img" aria-label="GOODTIMES">\n'
+        f'{style}'
         f'  <rect width="100%" height="100%" fill="{bg}"/>\n'
-        f'  <g fill="none" stroke-linecap="round" stroke-linejoin="round">\n  {groups}\n  </g>\n</svg>\n'
+        f'  <g class="gt-tubes" fill="none" stroke-linecap="round" stroke-linejoin="round">\n    {body}\n  </g>\n</svg>\n'
     )
 
 
 if __name__ == "__main__":
-    (OUT / "goodtimes.svg").write_text(svg([(w, PALETTE[c]) for w, c in TUBE]))
+    tube = [(w, PALETTE[c]) for w, c in TUBE]
+    (OUT / "goodtimes.svg").write_text(svg(tube))
+    (OUT / "goodtimes-neon.svg").write_text(svg(tube, animate=True))
     (OUT / "goodtimes-flat.svg").write_text(svg([(W, FLAT)]))
-    print("wrote goodtimes.svg, goodtimes-flat.svg")
+    print("wrote goodtimes.svg, goodtimes-neon.svg, goodtimes-flat.svg")

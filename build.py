@@ -286,7 +286,7 @@ def actions_html(f, tmap):
     return f'<div class="actions">{"".join(acts)}</div>'
 
 
-LOGO = ROOT / "logo" / "goodtimes.svg"
+LOGO = ROOT / "logo" / "goodtimes-neon.svg"
 
 
 ICON = ROOT / "logo" / "goodtimes-icon.svg"
