@@ -39,7 +39,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .logo { display: flex; align-items: center; min-height: 52px; text-decoration: none; min-width: 0; }
 .logo-svg { display: block; height: 52px; width: auto; max-width: 100%; }
 .logo-text { font: 700 26px/1 var(--sans); color: var(--green); text-transform: uppercase; }
-.site-nav { display: flex; flex-wrap: wrap; gap: 2px 22px; }
+.site-nav { display: flex; flex-wrap: wrap; gap: 2px 22px; flex: 1 1 auto; justify-content: flex-end; }
+.site-nav .nav-end { margin-left: auto; }  /* "Who Is GT?" always sits at the far right */
 .site-nav a { font: 500 15px var(--sans); text-decoration: none; color: var(--muted); padding-block: 6px; white-space: nowrap; }  /* labels never break mid-way */
 .site-nav a:hover { color: var(--ink); }
 .site-nav a[aria-current="page"] { color: var(--green); }
@@ -280,7 +281,7 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   .mast .wrap { flex-wrap: wrap; row-gap: 6px; }
   .brand { flex: 1 1 100%; }
   .logo-svg { flex: none; }
-  .site-nav { gap: 0 18px; }
+  .site-nav { gap: 0 18px; justify-content: flex-start; }
   .film { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .film.has-poster { grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; }
   .film.has-poster .times { grid-column: 2; }

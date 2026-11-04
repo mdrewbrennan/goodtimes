@@ -331,8 +331,8 @@ def site_graph():
 
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
-NAV = (("home", "/", "Today&rsquo;s Showings"), ("listings", "/listings/", "All Listings"),
-       ("diy", "/diy/", "Underground &amp; DIY"), ("about", "/about/", "About"))
+NAV = (("home", "/", "Today&rsquo;s Showings"), ("diy", "/diy/", "Underground &amp; DIY"),
+       ("listings", "/listings/", "All Listings"), ("about", "/about/", "Who Is GT?"))  # the last one sits at the far right
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
           ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
@@ -342,7 +342,7 @@ USES_TMDB = False  # set in main() when any film has TMDB data, which means the 
 def page(title, description, path, active, body, updated, script="", head="", indexable=True, share=False, image=None):
     """A full HTML page. path is its address on the site ("/", "/listings/"), used for the canonical link.
     image is a link-preview picture (a poster) in place of the site's card."""
-    nav = "".join(f'<a href="{href}"{" aria-current=page" if key == active else ""}>{label}</a>'
+    nav = "".join(f'<a href="{href}"{" class=nav-end" if key == NAV[-1][0] else ""}{" aria-current=page" if key == active else ""}>{label}</a>'
                   for key, href, label in NAV)
     url = SITE_URL + path
     title, description = escape(title), escape(description)
@@ -1574,7 +1574,7 @@ def render_about(data):
     return f"""
 <main><div class="wrap about">
   <header class="page-head">
-    <p class="eyebrow">About</p>
+    <p class="eyebrow">Who Is GT?</p>
     <h1>To live and watch movies in LA</h1>
   </header>
   <section class="prose">
