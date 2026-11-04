@@ -95,7 +95,9 @@ GEO = {
     "landmark-pasadena": ("Pasadena", 34.1458, -118.1366), "gardena": ("South Bay", 33.8960, -118.3266),
     "academy-museum": ("Hollywood & Mid-City", 34.0637, -118.3609), "usc": ("Downtown", 34.0219, -118.2856),
     "hammer": ("Westside", 34.0597, -118.4434), "finearts": ("Westside", 34.0664, -118.3787),
-    "alex": ("Eastside", 34.1488, -118.2551),
+    "alex": ("Eastside", 34.1488, -118.2551), "laemmle-glendale": ("Eastside", 34.1478, -118.2563),
+    "laemmle-monica": ("Westside", 34.0167, -118.4960), "laemmle-noho": ("Valley", 34.1673, -118.3762),
+    "laemmle-town": ("Valley", 34.1597, -118.5048), "laemmle-newhall": ("Valley", 34.3796, -118.5318),
     "veggiecloud": ("Eastside", 34.1077, -118.2009), "cinemasaloon": ("Hollywood & Mid-City", 34.0331, -118.3602),
 }
 CITIES = {"Santa Monica", "Beverly Hills", "West Hollywood", "Pasadena", "Gardena"}  # neighborhoods that are their own city
