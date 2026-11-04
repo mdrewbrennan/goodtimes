@@ -22,6 +22,9 @@ python3 -m http.server 8765 -d site   # the pages use site-root links, so serve 
 ## How it's organized
 
 - `scrapers/`: one module per theater or ticketing platform. Each exposes `THEATERS` and `scrape(theater)`.
+  `common.py`, `veezi.py`, `la_offset.py` and `titlecase.py` are shared helpers, not theaters. The Academy
+  Museum's ticketing host needs TLS 1.3, which the macOS Command Line Tools Python (LibreSSL) can't do, so
+  that one theater fails on such a Python and works on Netlify or any python.org/Homebrew Python.
 - `scrape.py`: runs every scraper, removes duplicates, and writes `data/listings.json`.
 - `build.py`, `style.css`: turn the data into the homepage, the listings page and the 404 page, plus the
   search-engine files: canonical links and link-preview tags, `robots.txt`, `sitemap.xml`, the web app

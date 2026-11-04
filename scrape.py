@@ -11,13 +11,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import tmdb
-from scrapers import (alamo, arts2220, cinematheque, filmbot, gardena, laemmle, landmark, lumiere,
-                      muscle, newbev, nowinstant, prs, vista, whammy)
+from scrapers import (academy, alamo, alex, arts2220, cinemasaloon, cinematheque, filmbot, finearts, gardena,
+                      hammer, laemmle, landmark, lumiere, muscle, newbev, nowinstant, prs, usc, veggiecloud,
+                      vista, whammy)
 
 # A theater with "specials_only": True (Alamo) is scraped in full, but the site shows only its special
 # screenings. Remove that flag in its scraper module to show everything it plays.
 MODULES = [filmbot, cinematheque, newbev, vista, laemmle, lumiere, landmark, alamo, gardena, nowinstant,
-           whammy, prs, arts2220, muscle]
+           whammy, prs, arts2220, muscle, academy, usc, hammer, alex, finearts,
+           veggiecloud, cinemasaloon]
 
 # Series that screen at other theaters. Their listings are dropped when the host theater already
 # lists the same film on the same day.

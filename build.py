@@ -93,6 +93,10 @@ GEO = {
     "arts2220": ("Eastside", 34.0688, -118.2700), "vidiots": ("Eastside", 34.1330, -118.2108),
     "alamo-dtla": ("Downtown", 34.0480, -118.2590), "now-instant": ("Downtown", 34.0661, -118.2387),
     "landmark-pasadena": ("Pasadena", 34.1458, -118.1366), "gardena": ("South Bay", 33.8960, -118.3266),
+    "academy-museum": ("Hollywood & Mid-City", 34.0637, -118.3609), "usc": ("Downtown", 34.0219, -118.2856),
+    "hammer": ("Westside", 34.0597, -118.4434), "finearts": ("Westside", 34.0664, -118.3787),
+    "alex": ("Eastside", 34.1488, -118.2551),
+    "veggiecloud": ("Eastside", 34.1077, -118.2009), "cinemasaloon": ("Hollywood & Mid-City", 34.0331, -118.3602),
 }
 CITIES = {"Santa Monica", "Beverly Hills", "West Hollywood", "Pasadena", "Gardena"}  # neighborhoods that are their own city
 
