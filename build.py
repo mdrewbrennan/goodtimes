@@ -27,6 +27,7 @@ from html import escape
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import archive
 import tmdb
 
 ROOT = Path(__file__).parent
@@ -463,7 +464,7 @@ def film_row(f, tmap):
     return (f'<li class="film{" has-poster" if poster else ""}" id="f-{event_id(f)}" data-special="{int(f["is_special"])}" '
             f'data-search="{search}" data-genres="{escape("|".join(f["genre_list"]))}" '
             f'data-keys="{escape(keys)}" data-year="{year}">{poster}'
-            f'<div class="film-body">{tags_html(f)}<h4>{link(f["film_url"], escape(f["title"]))}</h4>'
+            f'<div class="film-body">{tags_html(f)}<h4>{film_link(f)}</h4>'
             f'{meta_html(f)}{guests_html(f)}{blurb}{actions_html(f, tmap)}</div>'
             f'<div class="times">{times_html(f["times"])}</div></li>')
 
@@ -1449,6 +1450,118 @@ def collection_pages(data, screenings, tmap, today, updated):
     return pages
 
 
+# ---------- film pages ----------
+# A page per film (/films/<title>-<year>/) with every upcoming screening across theaters. They're built from the
+# archive (archive.py), so a film's page stays up after its run, saying when and where it last screened. Pages of
+# films with nothing coming up stay out of search.
+
+FILM_PATHS = {}  # film key -> its page; filled in by main() so film titles everywhere can link to it
+
+
+def title_key(s):
+    return f'title:{tmdb.norm(tmdb.core_title(s["title"]))}:{s["year"] or ""}'
+
+
+def film_key(s):
+    """One film however theaters write its title: its TMDB id when matched, otherwise its core title and year."""
+    info = s.get("tmdb") or {}
+    return f'tmdb:{info["id"]}' if info.get("id") else title_key(s)
+
+
+def film_link(f):
+    """A film's title, linked to its page here (or to the theater's page for it when it has none)."""
+    path = FILM_PATHS.get(film_key(f))
+    return f'<a href="{path}">{escape(f["title"])}</a>' if path else link(f["film_url"], escape(f["title"]))
+
+
+def film_slug(film):
+    return slug(film["title"]) + (f'-{film["year"]}' if film.get("year") else "") or "film"
+
+
+def film_records(screenings):
+    """This build's films for the archive: what's known about each and where it's shown."""
+    films = {}
+    for start, s in screenings:
+        info = s.get("tmdb") or {}
+        seen = {"title": info.get("title") or tmdb.core_title(s["title"]), "year": s["year"] or info.get("year"),
+                "director": s["director"], "runtime": s["runtime"], "genres": s["genre_list"],
+                "poster": info.get("poster") or s.get("image"), "tmdb": info.get("url")}
+        f = films.setdefault(film_key(s), {**seen, "title_key": title_key(s), "shown": set()})
+        for k, v in seen.items():
+            f[k] = f[k] or v  # fill gaps from other theaters' listings of the same film
+        f["shown"].add((start.date(), s["theater"]))
+    return films
+
+
+def render_film(film, shows, tmap, today):
+    poster = (f'<img class="poster large" src="{escape(film["poster"])}" alt="" decoding="async" '
+              f'referrerpolicy="no-referrer">' if film.get("poster") else "")
+    meta = " · ".join(x for x in (film.get("year"), escape(film["director"]) if film.get("director") else None,
+                                  f'{film["runtime"]} min' if film.get("runtime") else None,
+                                  " / ".join((film.get("genres") or [])[:2]) or None) if x)
+    title = escape(film["title"])
+    if shows:
+        k = len({s["theater"] for _, s in shows})
+        intro = lede(shows, tmap, today, f'{plural(len(shows), "screening")} of <i>{title}</i> coming up at '
+                                         f'{plural(k, "LA theater")}.')
+        body = schedule_html(shows, tmap, today)
+    else:
+        last = archive.last_shown(film, today)
+        intro = (f'<p class="lede">Not playing in LA right now. Last screened at '
+                 f'{escape(tmap[last[1]]["name"]) if last[1] in tmap else "an LA theater"} on '
+                 f'{last[0].strftime("%B %-d, %Y")}.</p>' if last else '<p class="lede">Not playing in LA right now.</p>')
+        past = sorted((x for x in film["shown"] if x[0] <= today.isoformat()), reverse=True)[:10]
+        body = ('<section class="intro"><h2 class="area-head">Where it played</h2><ul class="theater-list">' + "".join(
+            f'<li>{datetime.fromisoformat(d).strftime("%b %-d, %Y")}<span class="hood">'
+            f'{venue_link(tmap[t]) if t in tmap else ""}</span></li>' for d, t in past) + "</ul></section>") if past else ""
+    tmdb_link = (f'<p class="theater-facts">{link(film["tmdb"], "More on TMDB")} · '
+                 f'<a href="/listings/">Everything playing in LA</a></p>') if film.get("tmdb") else ""
+    return f"""
+<main><div class="wrap">
+  <article class="event{" has-poster" if poster else ""}">
+    {poster}
+    <div class="event-body">
+      <p class="eyebrow">Film</p>
+      <h1>{title}</h1>
+      {f'<p class="meta">{meta}</p>' if meta else ""}
+      {intro}
+      {tmdb_link}
+    </div>
+  </article>
+  {body}
+  <p class="upcoming-foot"><a class="more" href="/listings/">Everything playing in LA →</a></p>
+</div></main>"""
+
+
+def film_pages(arch, screenings, tmap, today, updated):
+    """{path: html} for every film in the archive."""
+    upcoming_by = OrderedDict()
+    for x in screenings:
+        upcoming_by.setdefault(film_key(x[1]), []).append(x)
+    pages = {}
+    for key, film in arch["films"].items():
+        path = f'/films/{film["slug"]}/'
+        shows = upcoming_by.get(key, [])
+        label = f'{film["title"]} ({film["year"]})' if film.get("year") else film["title"]
+        names = list(OrderedDict.fromkeys(tmap[s["theater"]]["name"] for _, s in shows))
+        by = f', dir. {film["director"]}' if film.get("director") else ""
+        desc = (f'Where to see {label} in Los Angeles{by}: {plural(len(shows), "screening")} at {", ".join(names[:3])}'
+                f'{" and more" if len(names) > 3 else ""}. Times and tickets.' if shows
+                else f'{label}{by}: not playing in LA right now. When and where it last screened.')
+        movie = {"@type": "Movie", "@id": SITE_URL + path + "#film", "name": film["title"],
+                 **({"dateCreated": str(film["year"])} if film.get("year") else {}),
+                 **({"director": {"@type": "Person", "name": film["director"]}} if film.get("director") else {}),
+                 **({"image": film["poster"]} if film.get("poster") else {}),
+                 **({"sameAs": film["tmdb"]} if film.get("tmdb") else {})}
+        if not shows:
+            UNLISTED.add(path)
+        pages[path] = page(f'{label} Showtimes in Los Angeles | {SITE_NAME}' if shows else f'{label} in Los Angeles | {SITE_NAME}',
+                           desc, path, None, render_film(film, shows, tmap, today), updated, indexable=bool(shows),
+                           image=film.get("poster"),
+                           head=json_ld({"@graph": [movie, breadcrumbs((label, path))] + events_ld(shows, tmap, path)}))
+    return pages
+
+
 # ---------- for answer engines and other tools ----------
 
 def listings_json(data, screenings, tmap, scraped):
@@ -1469,6 +1582,7 @@ def listings_json(data, screenings, tmap, scraped):
             "tags": s["event_tags"], "guests": s.get("guests"), "festival": s.get("festival"),
             "sold_out": s["sold_out"], "tickets": s["ticket_url"],
             "page": f'{SITE_URL}/dates/{start.date().isoformat()}/#f-{short_id(s["theater"], s["title"], start.date().isoformat())}',
+            **({"film_page": SITE_URL + FILM_PATHS[film_key(s)]} if film_key(s) in FILM_PATHS else {}),
         } for start, s in screenings if has_page(tmap[s["theater"]])],
     }, ensure_ascii=False, separators=(",", ":")) + "\n"
 
@@ -1496,7 +1610,9 @@ def llms_txt(data, collections):
         "director, format, guests, sold out, ticket link)",
         f"- [Special events calendar]({SITE_URL}/cal/special-events.ics): iCalendar feed; each theater has one at "
         f"/cal/<theater id>.ics",
-        f"- [About]({SITE_URL}/about/)", ""])
+        f"- [About]({SITE_URL}/about/)", "",
+        "Each film has a page at /films/<title>-<year>/ with every upcoming screening across theaters, or when and "
+        "where it last screened.", ""])
 
 
 def render_about(data):
@@ -1591,7 +1707,8 @@ def headers():
     out += "/cal/*\n  Content-Type: text/calendar; charset=utf-8\n  Cache-Control: public, max-age=3600\n"
     out += "/e/*\n  X-Robots-Tag: noindex\n"
     out += "/listings.json\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=3600\n"
-    out += "/llms.txt\n  Content-Type: text/plain; charset=utf-8\n"  # screening pages are for sharing; they expire after the day
+    out += "/llms.txt\n  Content-Type: text/plain; charset=utf-8\n"
+    out += "/archive.json\n  X-Robots-Tag: noindex\n"  # the build's memory of past films (see archive.py)  # screening pages are for sharing; they expire after the day
     if PREVIEW:  # keep images and other files out of search too, not just the pages
         out += "/*\n  X-Robots-Tag: noindex, nofollow\n"
     return out
@@ -1613,6 +1730,8 @@ def main():
     today = now.date()
     screenings = upcoming(data, now)
     USES_TMDB = any(s.get("tmdb") for _, s in screenings)
+    arch = archive.record(archive.load(SITE_URL), film_records(screenings), today, film_slug)
+    FILM_PATHS.update({k: f'/films/{f["slug"]}/' for k, f in arch["films"].items()})
     tmap = {t["id"]: t for t in data["theaters"]}
     places = [area(t) for t in data["theaters"] if has_page(t)]
     AREA_PAGES.update(a for a in AREAS if places.count(a) >= 2)
@@ -1680,7 +1799,8 @@ def main():
             f"/festivals/{slug(name)}/", None, render_festival(name, shows, tmap, today), updated)
 
     collections = collection_pages(data, screenings, tmap, today, updated)
-    for path, html in collections.items():
+    films = film_pages(arch, screenings, tmap, today, updated)
+    for path, html in {**collections, **films}.items():
         generated[path.strip("/") + "/index.html"] = html
 
     files = {
@@ -1692,6 +1812,7 @@ def main():
         "robots.txt": robots_txt(),
         "sitemap.xml": sitemap(["/", "/listings/", "/this-weekend/", "/theaters/", "/about/"] + (["/picks/"] if week else [])
                                + [p for p in collections if p not in ("/this-weekend/", "/theaters/") and p not in UNLISTED]
+                               + [p for p in films if p not in UNLISTED]
                                + [f"/festivals/{slug(n)}/" for n in festivals],
                                scraped.isoformat(timespec="seconds")),
         "site.webmanifest": manifest(),
@@ -1699,6 +1820,7 @@ def main():
         "_headers": headers(),
         "listings.json": listings_json(data, screenings, tmap, scraped),
         "llms.txt": llms_txt(data, collections),
+        "archive.json": archive.dump(arch),
         f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY + "\n",
     }
     copies = {
@@ -1715,7 +1837,7 @@ def main():
     ico = favicon_ico((ROOT / "logo" / "favicon-48.png").read_bytes())
     for out in (SITE, NETLIFY):
         (out / "listings.html").unlink(missing_ok=True)  # replaced by listings/index.html
-        for folder in ["e", "cal", "festivals", "theaters", "dates"] + [p.strip("/") for p in collections]:
+        for folder in ["e", "cal", "festivals", "theaters", "dates", "films"] + [p.strip("/") for p in collections]:
             shutil.rmtree(out / folder, ignore_errors=True)
         for name, text in {**files, **generated}.items():
             (out / name).parent.mkdir(parents=True, exist_ok=True)

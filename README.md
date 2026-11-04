@@ -30,10 +30,23 @@ python3 -m http.server 8765 -d site   # the pages use site-root links, so serve 
   the link-preview card (`og-image.png`) are drawn from them by `render_images.sh`; rerun it after changing them.
 - `fonts/`: Inter, served from the site itself (SIL Open Font License, in `fonts/OFL.txt`).
 - `indexnow.py`: tells Bing and the search engines that share its index which pages changed.
+- `archive.py`: remembers every film listed so far, so a film's page outlives its last screening (see below).
 - `picks.md`: the weekly "Worth leaving the house for" picks, written by hand (see below).
 - `tmdb.py`: matches each film to The Movie Database for its poster, score, trailer and genres (see below).
 
-Besides the homepage and listings, the build writes an About page (`/about/`), a page per festival
+Pages people search for, each with its screenings marked up as schema.org `ScreeningEvent`s:
+
+- a page per theater (`/theaters/<name>/`, its next 30 days) and a `/theaters/` index by area
+- `/this-weekend/`, `/special-events/`, `/35mm/`, `/70mm/`, `/q-and-a/`, `/double-features/` (`COLLECTIONS`
+  in `build.py`), and a page per area of town with two or more theaters (`/eastside/`, `/westside/`...)
+- a page per date (`/dates/YYYY-MM-DD/`, in search for the next 14 days) and a `/dates/` index; `/listings/`
+  itself covers the next 7 days
+- a page per film (`/films/<title>-<year>/`) with every upcoming screening across theaters, or, once its run
+  ends, when and where it last screened (those pages stay out of search)
+
+For AI tools and anyone else, `/llms.txt` maps the site and `/listings.json` has every upcoming screening.
+
+Besides those, the build writes an About page (`/about/`), a page per festival
 (`/festivals/<name>/`), a page per film per day for share links (`/e/<id>/`), an `.ics` file per screening
 (`/cal/s/<id>.ics`) and calendar feeds people can subscribe to: one per theater (`/cal/<theater>.ics`) and one
 for every special event (`/cal/special-events.ics`). Theater areas and map coordinates (for the theater menu
@@ -48,6 +61,13 @@ themoviedb.org, then Settings → API. Set it as `TMDB_API_KEY` (or the longer r
 in your shell for local runs and in Netlify (Site configuration → Environment variables) for the daily build.
 Without it the site still builds, with text-only cards. A film only gets a poster when TMDB agrees on its
 title and on its director or year; `data/tmdb.json` caches the matches.
+
+## The film archive
+
+Each build's listings are thrown away, so `archive.py` keeps a record of every film: what it is and when and
+where it screened. A production build on Netlify downloads the live `/archive.json`, adds the day's screenings
+and publishes the new one; if that download fails, the build stops so the site keeps its history. Local builds
+use `data/archive.json`. A film nobody has screened for a year drops out.
 
 ## Weekly picks
 
@@ -78,8 +98,8 @@ during its builds, or `SITE_URL` if it's set. Once a custom domain is primary, t
 
 ## Daily refresh
 
-`.github/workflows/daily-refresh.yml` asks Netlify to rebuild every day at 7:00 a.m. Los Angeles time,
-including across daylight saving. It needs a repository secret named `NETLIFY_BUILD_HOOK` (Netlify →
+`.github/workflows/daily-refresh.yml` asks Netlify to rebuild twice a day, at 7:00 a.m. and 3:00 p.m. Los
+Angeles time, including across daylight saving. It needs a repository secret named `NETLIFY_BUILD_HOOK` (Netlify →
 Site configuration → Build & deploy → Build hooks). To test it, use **Actions → Daily refresh → Run workflow**.
 With a `SITE_URL` repository variable set, it then waits for the new build to go live and runs `indexnow.py`.
 
