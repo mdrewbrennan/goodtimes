@@ -342,7 +342,8 @@ USES_TMDB = False  # set in main() when any film has TMDB data, which means the 
 def page(title, description, path, active, body, updated, script="", head="", indexable=True, share=False, image=None):
     """A full HTML page. path is its address on the site ("/", "/listings/"), used for the canonical link.
     image is a link-preview picture (a poster) in place of the site's card."""
-    nav = "".join(f'<a href="{href}"{" class=nav-end" if key == NAV[-1][0] else ""}{" aria-current=page" if key == active else ""}>{label}</a>'
+    nav_class = lambda key: " class=nav-end" if key == NAV[-1][0] else " class=nav-diy" if key == "diy" else ""
+    nav = "".join(f'<a href="{href}"{nav_class(key)}{" aria-current=page" if key == active else ""}>{label}</a>'
                   for key, href, label in NAV)
     url = SITE_URL + path
     title, description = escape(title), escape(description)
@@ -1192,7 +1193,7 @@ COLLECTIONS = [
      lambda s: "Guests in person" in s["event_tags"]),
     ("diy", "DIY, Underground & Micro-Cinema Screenings in LA", DIY_LABEL, "DIY and micro-cinemas in LA",
      ("DIY screening", "DIY screenings"), "Artist-run rooms, storefront micro-cinemas, archives and pop-up series: "
-     "the small, one-off screenings you won't find on a multiplex schedule. Seats are few, so check the venue's page.",
+     "the small, one-off screenings you won't find on a multiplex schedule. Seats are few, so check the venue's page!!",
      lambda s: s["is_diy"]),
     ("double-features", "Double Features in Los Angeles", "Two films, one bill", "Double features in LA",
      ("double bill", "double bills"), "Two films programmed together on one bill at LA's repertory theaters.", is_double),
@@ -1201,11 +1202,12 @@ AREA_TITLES = {"Downtown": "Downtown LA", "Valley": "San Fernando Valley"}
 AREA_IN = {"Eastside": "on the Eastside", "Westside": "on the Westside", "Valley": "in the Valley"}  # otherwise "in <area>"
 
 
-def collection_page(heading, eyebrow, shows, tmap, today, counted, about, empty, solo=False, extra=""):
-    lead = lede(shows, tmap, today, counted, at=not solo)
+def collection_page(heading, eyebrow, shows, tmap, today, counted, about, empty, solo=False, extra="", count=True, cls=""):
+    """count=False leaves out the "N screenings coming up… Next: …" sentence. cls is a class for the page's <main>."""
+    lead = lede(shows, tmap, today, counted, at=not solo) if count else ""
     body = schedule_html(shows, tmap, today, solo) or f'<p class="note">{empty}</p>'
     return f"""
-<main><div class="wrap">
+<main{f' class="{cls}"' if cls else ""}><div class="wrap">
   <header class="page-head">
     <p class="eyebrow">{eyebrow}</p>
     <h1>{heading}</h1>
@@ -1350,7 +1352,8 @@ def collection_pages(data, screenings, tmap, today, updated):
                 'Updated every morning.') if shows else f"{about[:150]}"
         pages[path] = page(f"{title} | {SITE_NAME}", desc, path, "diy" if key == "diy" else None,
                            collection_page(heading, eyebrow, shows, tmap, today, counted, about,
-                                           f"Nothing is listed right now. New screenings are added every morning."),
+                                           f"Nothing is listed right now. New screenings are added every morning.",
+                                           **({"count": False, "cls": "diy-page"} if key == "diy" else {})),
                            updated, head=json_ld({"@graph": [breadcrumbs((heading, path))] + events_ld(shows, tmap, path)}))
 
     # A page per date, and an index of them

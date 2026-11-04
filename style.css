@@ -44,6 +44,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .site-nav a { font: 500 15px var(--sans); text-decoration: none; color: var(--muted); padding-block: 6px; white-space: nowrap; }  /* labels never break mid-way */
 .site-nav a:hover { color: var(--ink); }
 .site-nav a[aria-current="page"] { color: var(--green); }
+/* The DIY tab wears the DIY stamp: dashed, slightly crooked, green text. */
+.site-nav .nav-diy { color: var(--green); padding: 3px 9px; border: 1.5px dashed var(--green); border-radius: 3px; transform: rotate(-2deg); align-self: center; }
+.site-nav .nav-diy:hover { color: var(--green); border-style: solid; }
+.site-nav .nav-diy[aria-current="page"] { border-style: solid; }
+/* On /diy/ every venue is DIY, so the stamp and dashed rules would only repeat; the page uses the plain look. */
+.diy-page .diy-stamp { display: none; }
+.diy-page .venue.diy { border-bottom-style: solid; }
+.diy-page .venue.diy .film + .film { border-top-style: dashed; }
 
 /* Shared pieces */
 .time { display: inline-block; font: 500 13.5px/1 var(--sans); color: var(--green); text-decoration: none; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
