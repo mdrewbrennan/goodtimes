@@ -83,7 +83,8 @@ GENRE_NAMES = {"science fiction": "Sci-Fi", "sci-fi": "Sci-Fi", "biopic": "Biogr
 # "Near me"). Areas run west to east, then the outliers.
 # DIY, underground and micro-cinemas: artist-run rooms, storefronts and pop-up series rather than cinemas
 # with a daily program. They get their own look, a DIY filter on the listings and a /diy/ page.
-DIY_THEATERS = {"whammy", "now-instant", "arts2220", "prs", "cinemasaloon", "veggiecloud", "muscle"}
+DIY_THEATERS = {"whammy", "now-instant", "arts2220", "prs", "cinemasaloon", "veggiecloud", "muscle",
+                "coaxial", "humanresources", "roadhouse", "velaslavasay", "leroys"}
 DIY_LABEL = "DIY · Micro-cinema"
 
 AREAS = ["Westside", "Hollywood & Mid-City", "Eastside", "Downtown", "Pasadena", "South Bay"]
