@@ -44,9 +44,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .site-nav a { font: 500 15px var(--sans); text-decoration: none; color: var(--muted); padding-block: 6px; white-space: nowrap; }  /* labels never break mid-way */
 .site-nav a:hover { color: var(--ink); }
 .site-nav a[aria-current="page"] { color: var(--green); }
-/* The DIY tab is a little marquee: slightly crooked, ringed by dots that chase around it, and it flickers now and then. */
+/* The DIY tab is a little marquee in the logo's neon pink: slightly crooked, ringed by dots that chase around it, and it flickers now and then. */
 .site-nav .nav-diy, .site-nav .nav-diy:hover, .site-nav .nav-diy[aria-current="page"] {
-  --bulb: var(--green); color: var(--green); padding: 6px 13px; border-radius: 2px; transform: rotate(-2deg); align-self: center;
+  --bulb: #E07C8C; color: #B8344A; padding: 6px 13px; border-radius: 2px; transform: rotate(-2deg); align-self: center;
   background:
     radial-gradient(circle, var(--bulb) 1.1px, transparent 1.7px) 0 0 / 7px 4px repeat-x,
     radial-gradient(circle, var(--bulb) 1.1px, transparent 1.7px) 0 100% / 7px 4px repeat-x,
@@ -333,4 +333,70 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   html { scroll-padding-top: 16px; }
   .diy-list a { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
   .diy-list .where { grid-column: 2; text-align: left; margin-top: -6px; }
+}
+
+/* Restyle (after taste-skill): hairline rules and tiny tracked caps give way to space, tone steps
+   and a larger type scale; the page is wider. Delete this block to return to the older look. */
+:root { --wash: #F2F2EF; --step: #E9E9E4; }
+.wrap { max-width: 1120px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+
+/* Masthead and first screen: no rules, sentence case */
+.mast { border-bottom: 0; }
+.tagline { border-left: 0; padding-left: 0; color: var(--muted); font-weight: 400; }
+.site-nav a { font-size: 16px; }
+.eyebrow { font: 400 17px/1.4 var(--sans); text-transform: none; letter-spacing: 0; color: var(--muted); }
+
+/* Controls: a tone step, no rule */
+.controls { border-bottom: 0; background: var(--wash); }
+.chip, .select, .search { border: 0; background-color: var(--paper); }
+.home-search .search, .home-search .chip, .home-search button { background-color: var(--wash); }
+.chip:hover, .select:hover { background-color: var(--step); }
+.chip.on, .picker.on summary { box-shadow: none; background: var(--ink); color: var(--paper); }
+.chip.on::before { color: #F3B3BD; }
+.days a span { font-size: 12px; text-transform: none; letter-spacing: 0; }
+.days a:hover { background: var(--step); }
+
+/* Days and venues: space and scale instead of rules */
+.day { margin-top: 96px; }
+.page-head + .day { margin-top: 24px; }
+.day-head { border-bottom: 0; padding-bottom: 20px; }
+.day-head h2 { font-size: clamp(30px, 3.6vw, 44px); letter-spacing: -0.035em; }
+.day-head .date, .day-head .count { font-size: 15px; letter-spacing: 0; }
+.venue, .venue.diy { border-bottom: 0; padding: 36px 0 28px; gap: 40px; grid-template-columns: 240px minmax(0, 1fr); }
+.venue-name { font-size: 22px; letter-spacing: -0.025em; }
+.venue-meta { font-size: 14px; text-transform: none; letter-spacing: 0; }
+.film:not(.past, [hidden]) ~ .film { border-top: 0; }
+.film { padding: 16px 0; gap: 24px; }
+.film h4 { font-size: 22px; letter-spacing: -0.02em; }
+.meta, .film .blurb { color: #4D4D4D; }
+.tags { font-size: 13px; text-transform: none; letter-spacing: 0; }
+.film.has-poster { grid-template-columns: 72px minmax(0, 1fr) auto; }
+.poster { border-radius: 0; background: var(--step); }
+.poster.small { width: 72px; height: 108px; }
+
+/* Showtimes: flat filled blocks, square, the one place the accent fills */
+.time { border: 0; border-radius: 0; background: var(--wash); font-size: 15px; padding: 9px 12px; }
+.time:hover { background: var(--green); color: var(--paper); }
+.time.sold-out:hover { background: var(--wash); color: var(--faint); }
+
+/* Lists: no rules */
+.pick, .upcoming-list a, .diy-list a, .about-theaters li, .theater-list li { border-bottom: 0; }
+.upcoming-list .when, .diy-list .when, .prose h3, .option .hood, .group-head { text-transform: none; letter-spacing: 0; font-size: 14px; }
+.upcoming-list a:hover, .diy-list a:hover { background: var(--wash); box-shadow: -12px 0 0 var(--wash), 12px 0 0 var(--wash); }
+.area-head { border-bottom: 0; font-size: 30px; letter-spacing: -0.03em; margin-top: 64px; }
+.diy-block .day-head { border-bottom: 0; }
+.diy-stamp { text-transform: none; letter-spacing: .01em; font-size: 12px; }
+
+/* Footer: a tone step instead of a rule */
+footer { border-top: 0; margin-top: 120px; background: var(--wash); }
+footer .wrap { font-size: 14px; padding-block: 48px 64px; }
+footer .browse { border-bottom: 0; }
+
+@media (max-width: 640px) {
+  .site-nav a { font-size: 15px; }  /* the larger desktop size wraps the nav to three rows on a phone */
+  .venue-head, .listings .venue-head { border-bottom: 0; }
+  .venue, .venue.diy { gap: 8px; grid-template-columns: minmax(0, 1fr); }
+  .film.has-poster { grid-template-columns: 56px minmax(0, 1fr); }
+  .poster.small { width: 56px; height: 84px; }
+  .day { margin-top: 64px; }
 }
