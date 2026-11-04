@@ -441,13 +441,6 @@ def special_events(screenings):
 
 # ---------- pages ----------
 
-def watch_keys(f):
-    """Normalized titles a Letterboxd watchlist entry can match, plus the film's year."""
-    info = f.get("tmdb") or {}
-    keys = {tmdb.norm(t) for t in (tmdb.core_title(f["title"]), info.get("title")) if t}
-    return "|".join(sorted(k for k in keys if k)), info.get("year") or f["year"] or ""
-
-
 BLURB_CHARS = 220
 
 
@@ -463,11 +456,9 @@ def film_row(f, tmap):
     # Cards show two lines, so a long blurb is cut to about that; the screening's own page (/e/) has all of it.
     blurb = (f'<p class="blurb">{escape(clip(f["blurb"], BLURB_CHARS))}</p>'
              if f.get("blurb") and f["blurb"].strip().rstrip(".!") != (f.get("guests") or "").rstrip(".!") else "")
-    keys, year = watch_keys(f)
     poster = poster_html(f)
     return (f'<li class="film{" has-poster" if poster else ""}" id="f-{event_id(f)}" data-special="{int(f["is_special"])}" '
-            f'data-search="{search}" data-genres="{escape("|".join(f["genre_list"]))}" '
-            f'data-keys="{escape(keys)}" data-year="{year}">{poster}'
+            f'data-search="{search}" data-genres="{escape("|".join(f["genre_list"]))}">{poster}'
             f'<div class="film-body">{tags_html(f)}<h4>{film_link(f)}</h4>'
             f'{meta_html(f)}{guests_html(f)}{blurb}{actions_html(f, tmap)}</div>'
             f'<div class="times">{times_html(f["times"])}</div></li>')
@@ -720,18 +711,7 @@ def render_listings(data, screenings, now):
     </details>
     <button class="chip" id="special" type="button" aria-pressed="false">Special events</button>
     <button class="chip" id="near" type="button" aria-pressed="false">Near me</button>
-    <button class="chip" id="watch" type="button" aria-pressed="false" aria-controls="watch-panel">Letterboxd watchlist</button>
     <input class="search" id="search" type="search" placeholder="Search films, directors, guests, 35mm…" aria-label="Search listings">
-  </div>
-  <div class="watch-panel" id="watch-panel" hidden>
-    <p id="watch-intro">See which films on your Letterboxd watchlist are playing. On Letterboxd, go to
-      Settings → Data → Export your data, unzip the download and choose <b>watchlist.csv</b>.
-      It stays in this browser; nothing is uploaded.</p>
-    <p id="watch-status" hidden></p>
-    <div class="watch-row">
-      <label class="chip file"><input type="file" id="watch-file" accept=".csv,text/csv"><span id="watch-choose">Choose watchlist.csv</span></label>
-      <button type="button" class="link-button" id="watch-forget" hidden>Forget my watchlist</button>
-    </div>
   </div>
   <p class="near-status" id="near-status" hidden></p>
   <div class="days">{"".join(nav)}<a class="later" href="/dates/"><span>Later</span>→</a></div>
@@ -753,21 +733,9 @@ LISTINGS_SCRIPT = """<script>
   const [theaterPicker, genrePicker] = pickers;
   const special = document.getElementById("special");
   const near = document.getElementById("near");
-  const watch = document.getElementById("watch");
   const search = document.getElementById("search");
   const pressed = b => b.getAttribute("aria-pressed") === "true";
   const press = (b, on) => { b.setAttribute("aria-pressed", on ? "true" : "false"); b.classList.toggle("on", on); };
-
-  // Letterboxd watchlist: a Set of normalized titles, each with the years it was listed under.
-  let watchlist = null;
-  const norm = t => t.normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
-    .replace(/&/g, "and").replace(/^(the|a|an) /, "").replace(/[^a-z0-9]/g, "");
-  const onWatchlist = f => {
-    if (!watchlist || !f.dataset.keys) return false;
-    const year = +f.dataset.year;
-    return f.dataset.keys.split("|").some(k => watchlist.has(k)
-      && (!year || watchlist.get(k).some(y => !y || Math.abs(y - year) <= 1)));
-  };
 
   function label(p) {
     const picked = p.boxes.filter(b => b.checked);
@@ -782,19 +750,16 @@ LISTINGS_SCRIPT = """<script>
   function apply() {
     const q = search.value.trim().toLowerCase();
     const chosen = label(theaterPicker), genres = label(genrePicker);
-    const onlySpecial = pressed(special), onlyWatch = pressed(watch);
-    let any = false, matched = new Set();
+    const onlySpecial = pressed(special);
+    let any = false;
     document.querySelectorAll(".day").forEach(day => {
       let dayVisible = false;
       day.querySelectorAll(".venue").forEach(v => {
         let venueVisible = false;
         v.querySelectorAll(".film").forEach(f => {
-          const listed = onWatchlist(f);
-          if (listed) matched.add(f.dataset.keys);
           const ok = (chosen.size === 0 || chosen.has(v.dataset.theater))
             && (genres.size === 0 || f.dataset.genres.split("|").some(g => genres.has(g)))
             && (!onlySpecial || f.dataset.special === "1")
-            && (!onlyWatch || listed)
             && (!q || f.dataset.search.includes(q));
           f.hidden = !ok;
           venueVisible ||= ok;
@@ -812,14 +777,6 @@ LISTINGS_SCRIPT = """<script>
       any ||= dayVisible;
     });
     document.getElementById("no-results").hidden = any;
-    if (watchlist) {
-      watch.textContent = `My watchlist · ${matched.size}`;
-      const status = document.getElementById("watch-status");
-      status.hidden = false;
-      status.textContent = matched.size
-        ? `${matched.size} film${matched.size === 1 ? "" : "s"} from your watchlist (${watchlist.size} titles) ${matched.size === 1 ? "is" : "are"} playing.`
-        : `None of the ${watchlist.size} films on your watchlist are playing right now.`;
-    }
   }
 
   for (const p of pickers) {
@@ -881,71 +838,7 @@ LISTINGS_SCRIPT = """<script>
     }, { maximumAge: 600000, timeout: 15000 });
   });
 
-  // Letterboxd watchlist
-  const panel = document.getElementById("watch-panel");
-  const store = { get: () => { try { return localStorage.getItem("watchlist"); } catch { return null; } },
-                  set: v => { try { v === null ? localStorage.removeItem("watchlist") : localStorage.setItem("watchlist", v); } catch {} } };
-  function parseCsv(text) {
-    const rows = [];
-    let row = [], cell = "", quoted = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (quoted) {
-        if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
-        else if (c === '"') quoted = false;
-        else cell += c;
-      } else if (c === '"') quoted = true;
-      else if (c === ",") { row.push(cell); cell = ""; }
-      else if (c === "\\n" || c === "\\r") {
-        if (c === "\\r" && text[i + 1] === "\\n") i++;
-        row.push(cell); rows.push(row); row = []; cell = "";
-      } else cell += c;
-    }
-    if (cell || row.length) { row.push(cell); rows.push(row); }
-    return rows;
-  }
-  function loadWatchlist(entries) {
-    watchlist = new Map();
-    for (const [name, year] of entries) {
-      const k = norm(name);
-      if (k) watchlist.set(k, [...(watchlist.get(k) || []), +year || 0]);
-    }
-    document.getElementById("watch-forget").hidden = false;
-    document.getElementById("watch-intro").hidden = true;
-    document.getElementById("watch-choose").textContent = "Choose another file";
-  }
-  document.getElementById("watch-file").addEventListener("change", async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const rows = parseCsv(await file.text());
-    const head = (rows.shift() || []).map(h => h.trim().toLowerCase());
-    const ni = head.indexOf("name"), yi = head.indexOf("year");
-    const status = document.getElementById("watch-status");
-    if (ni < 0) { status.hidden = false; status.textContent = "That doesn't look like a Letterboxd watchlist.csv (it has no Name column)."; return; }
-    const entries = rows.filter(r => r[ni]).map(r => [r[ni], r[yi]]);
-    store.set(JSON.stringify(entries));
-    loadWatchlist(entries);
-    press(watch, true);
-    apply();
-  });
-  document.getElementById("watch-forget").addEventListener("click", () => {
-    store.set(null);
-    watchlist = null;
-    press(watch, false);
-    watch.textContent = "Letterboxd watchlist";
-    document.getElementById("watch-status").hidden = true;
-    document.getElementById("watch-intro").hidden = false;
-    document.getElementById("watch-forget").hidden = true;
-    document.getElementById("watch-choose").textContent = "Choose watchlist.csv";
-    apply();
-  });
-  watch.addEventListener("click", () => {
-    if (!watchlist) { panel.hidden = !panel.hidden; return; }  // nothing loaded yet: show how to load one
-    press(watch, !pressed(watch));
-    panel.hidden = !pressed(watch);
-    apply();
-  });
-  try { const saved = JSON.parse(store.get()); if (Array.isArray(saved)) loadWatchlist(saved); } catch {}
+  try { localStorage.removeItem("watchlist"); } catch {}  // from the old Letterboxd watchlist filter
 
   // Back to top: appears once you've scrolled a couple of screens down.
   const toTop = document.getElementById("to-top");

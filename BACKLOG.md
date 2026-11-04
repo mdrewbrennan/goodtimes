@@ -89,7 +89,7 @@ neighborhood), then win on point of view, design and how easy it is to make plan
 15. **"Worth leaving the house for" picks** (M). ✅ Homepage section and /picks/ page built Nov 3; waiting on the first week's picks. Newsletter still to do. A short weekly list with a sentence of why for each
     pick, on the homepage and as a newsletter. This is the thing Revival Hub structurally can't do, and
     it's the clearest answer to "how is this different."
-16. **Letterboxd watchlist match** ✅ built Nov 3 (M). Alaina suggested Letterboxd; their API is hard to get (Brannon
+16. **Letterboxd watchlist match** ❌ built Nov 3, removed Nov 4 at Maggie's call (M). Alaina suggested Letterboxd; their API is hard to get (Brannon
     was rejected, still worth applying). Without the API, people can export their watchlist CSV from
     Letterboxd and drop it on the page; the browser matches it against upcoming screenings and nothing
     is uploaded. "4 films from your watchlist are screening this week" is a strong reason to come back.

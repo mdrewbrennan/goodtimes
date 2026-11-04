@@ -187,13 +187,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .group-head { display: block; width: 100%; text-align: left; font: 500 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--green); background: none; border: 0; padding: 8px 10px 4px; cursor: pointer; }
 .group-head:hover { text-decoration: underline; text-underline-offset: 3px; }
 .venue-meta .dist { color: var(--ink); }
-.chip.file { display: inline-flex; align-items: center; cursor: pointer; }
-.chip.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.chip.file:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
-.watch-panel { font-size: 14px; color: var(--muted); max-width: 70ch; }
-.watch-panel p { margin: 0 0 8px; }
-.watch-panel #watch-status { color: var(--ink); }
-.watch-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .near-status { margin: 0; font-size: 14px; color: var(--muted); }
 
 /* Homepage search */
