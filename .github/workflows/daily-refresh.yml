@@ -1,8 +1,9 @@
-# Rebuild the GOODTIMES site on Netlify every day at 7:00 a.m. Los Angeles time.
+# Rebuild the GOODTIMES site on Netlify twice a day, at 7:00 a.m. and 3:00 p.m. Los Angeles time. The
+# afternoon build catches sellouts and screenings added during the day, before the evening shows.
 #
-# GitHub schedules run in UTC, which doesn't follow daylight saving, so this runs at both 14:00 and
-# 15:00 UTC. Each run checks which one is 7 a.m. in LA today (14:00 in PDT, 15:00 in PST) and only
-# that one triggers Netlify. Netlify then runs `python3 scrape.py && python3 build.py`; if that build
+# GitHub schedules run in UTC, which doesn't follow daylight saving, so each build time has two UTC slots,
+# an hour apart. Each run works out what LA time its slot is today and only the slot that lands on 7 a.m.
+# or 3 p.m. triggers Netlify. Netlify then runs `python3 scrape.py && python3 build.py`; if that build
 # fails, Netlify keeps the last successful version of the site live.
 #
 # Needs one repository secret: NETLIFY_BUILD_HOOK (the build hook URL from Netlify). Once the site is
@@ -15,6 +16,8 @@ on:
   schedule:
     - cron: "0 14 * * *"   # 7:00 a.m. PDT (mid-March to early November)
     - cron: "0 15 * * *"   # 7:00 a.m. PST (early November to mid-March)
+    - cron: "0 22 * * *"   # 3:00 p.m. PDT
+    - cron: "0 23 * * *"   # 3:00 p.m. PST
   workflow_dispatch:        # "Run workflow" button on the Actions tab, for testing
 
 permissions:
@@ -29,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Decide whether this run is 7 a.m. in Los Angeles
+      - name: Decide whether this run is 7 a.m. or 3 p.m. in Los Angeles
         id: when
         env:
           EVENT: ${{ github.event_name }}
@@ -40,13 +43,18 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "Manual run: building now."
             echo "go=true" >> "$GITHUB_OUTPUT"
-          elif { [ "$SCHEDULE" = "0 14 * * *" ] && [ "$offset" = "-0700" ]; } ||
-               { [ "$SCHEDULE" = "0 15 * * *" ] && [ "$offset" = "-0800" ]; }; then
-            echo "This is the 7 a.m. run for today: building."
-            echo "go=true" >> "$GITHUB_OUTPUT"
           else
-            echo "The other daylight-saving slot is today's 7 a.m. run: skipping."
-            echo "go=false" >> "$GITHUB_OUTPUT"
+            # The slot's UTC hour, shifted by today's offset (GitHub can start a run late, so don't use the clock).
+            utc_hour=$(echo "$SCHEDULE" | cut -d' ' -f2)
+            behind=$(( 10#${offset:1:2} ))   # 7 or 8 hours behind UTC; 10# so "08" isn't read as octal
+            la_hour=$(( (utc_hour + 24 - behind) % 24 ))
+            if [ "$la_hour" = 7 ] || [ "$la_hour" = 15 ]; then
+              echo "This slot is ${la_hour}:00 in LA today: building."
+              echo "go=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "This slot is ${la_hour}:00 in LA today; the other daylight-saving slot builds: skipping."
+              echo "go=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Trigger the Netlify build
@@ -60,7 +68,7 @@ jobs:
           fi
           # -f makes a rejected hook fail this run; the URL itself is never printed.
           curl --silent --show-error --fail --retry 3 --retry-delay 10 \
-            -X POST -d '{}' "$HOOK?trigger_title=Daily+refresh+(GitHub+Actions)" -o /dev/null
+            -X POST -d '{}' "$HOOK?trigger_title=Scheduled+refresh+(GitHub+Actions)" -o /dev/null
           echo "Netlify accepted the build request. Follow it under Deploys in Netlify."
 
       - name: Check out the repository
