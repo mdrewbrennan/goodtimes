@@ -231,9 +231,9 @@ def poster_html(film, size="small"):
     src = (film.get("tmdb") or {}).get("poster") or film.get("image")
     if not src:
         return ""
-    # A theater image that fails to load is removed, so the row falls back to its no-poster layout.
+    # A poster that fails to load is removed by COMMON_SCRIPT, so the row falls back to its no-poster layout.
     return (f'<img class="poster {size}" src="{escape(src)}" alt="" loading="lazy" decoding="async" '
-            f'referrerpolicy="no-referrer" onerror="this.closest(\'.has-poster\')?.classList.remove(\'has-poster\');this.remove()">')
+            f'referrerpolicy="no-referrer">')
 
 
 def slug(text):
@@ -294,7 +294,8 @@ def logo_html():
 def json_ld(data):
     """A schema.org block. Escapes "</" so a title can't close the script tag."""
     return ('<script type="application/ld+json">'
-            + json.dumps({"@context": "https://schema.org", **data}, ensure_ascii=False).replace("</", "<\\/")
+            + json.dumps({"@context": "https://schema.org", **data}, ensure_ascii=False, separators=(",", ":"))
+            .replace("</", "<\\/")
             + "</script>")
 
 
@@ -442,11 +443,20 @@ def watch_keys(f):
     return "|".join(sorted(k for k in keys if k)), info.get("year") or f["year"] or ""
 
 
+BLURB_CHARS = 220
+
+
+def clip(text, n):
+    """text cut at a word boundary to about n characters, with an ellipsis if anything was cut."""
+    return text if len(text) <= n else text[:n].rsplit(" ", 1)[0].rstrip(",;:.—–- ") + "…"
+
+
 def film_row(f, tmap):
     words = [f["title"], f["director"] or "", f.get("guests") or "", f.get("festival") or ""]
     search = escape(" ".join(words + f["event_tags"] + f["format_tags"] + f["genre_list"]).lower())
     # The guest line often is the whole blurb; don't print it twice.
-    blurb = (f'<p class="blurb">{escape(f["blurb"])}</p>'
+    # Cards show two lines, so a long blurb is cut to about that; the screening's own page (/e/) has all of it.
+    blurb = (f'<p class="blurb">{escape(clip(f["blurb"], BLURB_CHARS))}</p>'
              if f.get("blurb") and f["blurb"].strip().rstrip(".!") != (f.get("guests") or "").rstrip(".!") else "")
     keys, year = watch_keys(f)
     poster = poster_html(f)
@@ -723,7 +733,7 @@ def render_listings(data, screenings, now):
 </div></nav>
 <main class="listings"><div class="wrap">
   {"".join(sections) or '<p class="empty">No upcoming screenings found.</p>'}
-  <p class="empty" id="no-results" hidden>Nothing matches in the next two weeks. Try another search or filter, or
+  <p class="empty" id="no-results" hidden>Nothing matches in the next week. Try another search or filter, or
     look through <a href="/dates/">later dates</a>.</p>
   <p class="upcoming-foot"><a class="more" href="/dates/">Later dates →</a></p>
   <button class="to-top" id="to-top" type="button" hidden>↑ Back to top</button>
@@ -962,6 +972,14 @@ TMDB_CREDIT = ('<span>Posters, ratings and trailers from <a href="https://www.th
 
 # Share buttons and the small "Add to calendar" menus, on every page.
 COMMON_SCRIPT = """<script>
+  // A poster that fails to load (errors don't bubble, so this listens on the way down).
+  document.addEventListener("error", e => {
+    const img = e.target;
+    if (img.tagName === "IMG" && img.classList.contains("poster")) {
+      img.closest(".has-poster")?.classList.remove("has-poster");
+      img.remove();
+    }
+  }, true);
   function flash(button, text) {
     const old = button.textContent;
     button.textContent = text;
@@ -1093,7 +1111,8 @@ def render_festival(name, screenings, tmap, today):
 # can read the film, time, place and ticket link as facts instead of guessing from the text.
 
 THEATER_DAYS = 30     # how far ahead a theater's page lists
-LISTINGS_DAYS = 14    # /listings/ covers this many days; every date also has its own page under /dates/
+LISTINGS_DAYS = 7     # /listings/ covers this many days; every date also has its own page under /dates/
+INDEX_DAYS = 14       # date pages this far ahead are in search; later ones (often a single screening) aren't
 AREA_DAYS = 7
 COLLECTION_DAYS = 60
 # A sentence or two about a theater in your own words, shown at the top of its page. Keyed by theater id.
@@ -1134,7 +1153,7 @@ def screening_ld(start, s, t, path):
     movie = {"@type": "Movie", "name": info.get("title") or s["title"],
              **({"dateCreated": str(year)} if year else {}),
              **({"director": {"@type": "Person", "name": s["director"]}} if s["director"] else {}),
-             **({"image": image} if image else {}), **({"sameAs": info["url"]} if info.get("url") else {})}
+             **({"sameAs": info["url"]} if info.get("url") else {})}
     row = short_id(s["theater"], s["title"], start.date().isoformat())  # the film row's id, as in event_id()
     return {
         "@type": "ScreeningEvent", "name": s["title"], "url": f"{SITE_URL}{path}#f-{row}",
@@ -1147,7 +1166,7 @@ def screening_ld(start, s, t, path):
         "organizer": {"@type": "Organization", "name": t["name"], "url": t["url"]},
         "workPresented": movie,
         **({"image": image} if image else {}),
-        **({"description": s["blurb"][:300]} if s.get("blurb") else {}),
+        **({"description": clip(s["blurb"], 160)} if s.get("blurb") else {}),
         **({"videoFormat": s["format_tags"][0]} if s["format_tags"] else {}),
         "offers": {"@type": "Offer", "url": s["ticket_url"],
                    "availability": "https://schema.org/" + ("SoldOut" if s["sold_out"] else "InStock")},
@@ -1232,8 +1251,8 @@ COLLECTIONS = [
     ("double-features", "Double Features in Los Angeles", "Two films, one bill", "Double features in LA",
      ("double bill", "double bills"), "Two films programmed together on one bill at LA's repertory theaters.", is_double),
 ]
-AREA_TITLES = {"Downtown": "Downtown LA"}
-AREA_IN = {"Eastside": "on the Eastside", "Westside": "on the Westside"}  # otherwise "in <area>"
+AREA_TITLES = {"Downtown": "Downtown LA", "Valley": "San Fernando Valley"}
+AREA_IN = {"Eastside": "on the Eastside", "Westside": "on the Westside", "Valley": "in the Valley"}  # otherwise "in <area>"
 
 
 def collection_page(heading, eyebrow, shows, tmap, today, counted, about, empty, solo=False, extra=""):
@@ -1309,7 +1328,7 @@ def area_link(a):
 
 
 AREA_PAGES = set()  # areas with two or more theaters; filled in by main()
-UNLISTED = set()    # generated pages kept out of the sitemap (dates more than LISTINGS_DAYS ahead)
+UNLISTED = set()    # generated pages kept out of the sitemap (dates more than INDEX_DAYS ahead)
 
 
 def render_dates_index(days, today):
@@ -1327,7 +1346,7 @@ def render_dates_index(days, today):
     <h1>Every date</h1>
   </header>
   <section class="intro"><p class="about-page">What&rsquo;s playing at LA&rsquo;s indie and repertory theaters on any
-    day theaters have announced so far. <a href="/listings/">The listings</a> cover the next two weeks with filters.</p></section>
+    day theaters have announced so far. <a href="/listings/">The listings</a> cover the next week with filters.</p></section>
   {rows}
 </div></main>"""
 
@@ -1397,7 +1416,7 @@ def collection_pages(data, screenings, tmap, today, updated):
         k = len({s["theater"] for _, s in shows})
         nice = day.strftime("%A, %B %-d")
         counted = f'{plural(len(shows), "screening")} at {k} LA indie and repertory theater{"" if k == 1 else "s"} on {nice}.'
-        near = day < today + timedelta(days=LISTINGS_DAYS)
+        near = day < today + timedelta(days=INDEX_DAYS)
         if not near:
             UNLISTED.add(path)
         pages[path] = page(f"What's Playing in LA on {day.strftime('%A, %b %-d')}: Indie & Repertory Showtimes | {SITE_NAME}",
@@ -1428,6 +1447,56 @@ def collection_pages(data, screenings, tmap, today, updated):
                                            about, "Nothing listed in this area this week."),
                            updated, head=json_ld({"@graph": [breadcrumbs((label, path))] + events_ld(shows, tmap, path)}))
     return pages
+
+
+# ---------- for answer engines and other tools ----------
+
+def listings_json(data, screenings, tmap, scraped):
+    """Every upcoming screening as plain JSON at /listings.json, for anyone (or any AI tool) to read."""
+    theaters = [t for t in theater_order(data["theaters"]) if has_page(t)]
+    return json.dumps({
+        "name": SITE_NAME, "url": f"{SITE_URL}/", "updated": scraped.isoformat(timespec="seconds"),
+        "about": "Upcoming screenings at Los Angeles indie and repertory theaters, gathered from each theater's own "
+                 "site. Tickets are sold by the theaters; times are America/Los_Angeles.",
+        "theaters": [{"id": t["id"], "name": t["name"], "address": f'{t["address"]}, {city(t)}, CA',
+                      "neighborhood": t["neighborhood"], "area": area(t), "website": t["url"],
+                      "page": SITE_URL + theater_path(t), "calendar": f'{SITE_URL}/cal/{t["id"]}.ics'} for t in theaters],
+        "screenings": [{
+            "title": s["title"], "theater": s["theater"], "start": start.isoformat(),
+            **({"end": (start + timedelta(minutes=s["runtime"])).isoformat()} if s["runtime"] else {}),
+            "year": s["year"] or (s.get("tmdb") or {}).get("year"), "director": s["director"],
+            "runtime_minutes": s["runtime"], "genres": s["genre_list"], "formats": s["format_tags"],
+            "tags": s["event_tags"], "guests": s.get("guests"), "festival": s.get("festival"),
+            "sold_out": s["sold_out"], "tickets": s["ticket_url"],
+            "page": f'{SITE_URL}/dates/{start.date().isoformat()}/#f-{short_id(s["theater"], s["title"], start.date().isoformat())}',
+        } for start, s in screenings if has_page(tmap[s["theater"]])],
+    }, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+
+def llms_txt(data, collections):
+    """/llms.txt: a plain-text map of the site for AI tools (the llmstxt.org format)."""
+    theaters = [t for t in theater_order(data["theaters"]) if has_page(t)]
+    pages = [(p, re.sub(r"<[^>]+>", "", re.search(r"<title>(.*?) \| ", html).group(1)).replace("&amp;", "&").replace("&#x27;", "'"))
+             for p, html in collections.items() if not p.startswith(("/theaters/", "/dates/2")) and p not in UNLISTED]
+    return "\n".join([
+        f"# {SITE_NAME}", "",
+        f"> {TAGLINE}. What's playing at {len(theaters)} Los Angeles independent and repertory movie theaters: "
+        "revivals, new indies, 35mm and 70mm prints, Q&As, festivals and one-night-only screenings. Rebuilt twice a "
+        "day (7am and 3pm Pacific) from each theater's own website; tickets are sold by the theaters.", "",
+        "Every listing page marks up its screenings as schema.org ScreeningEvent. Times are America/Los_Angeles.", "",
+        "## Listings", "",
+        f"- [Showing today]({SITE_URL}/): today's screenings, upcoming special events and the weekly picks",
+        f"- [All listings]({SITE_URL}/listings/): the next week, day by day, with filters",
+        *[f"- [{title}]({SITE_URL}{p})" for p, title in pages],
+        f"- [Weekly picks]({SITE_URL}/picks/): a short, hand-written list of screenings worth leaving the house for", "",
+        "## Theaters", "",
+        *[f'- [{t["name"]}]({SITE_URL}{theater_path(t)}): {t["address"]}, {t["neighborhood"]}' for t in theaters], "",
+        "## Data", "",
+        f"- [listings.json]({SITE_URL}/listings.json): every upcoming screening as JSON (title, theater, start time, "
+        "director, format, guests, sold out, ticket link)",
+        f"- [Special events calendar]({SITE_URL}/cal/special-events.ics): iCalendar feed; each theater has one at "
+        f"/cal/<theater id>.ics",
+        f"- [About]({SITE_URL}/about/)", ""])
 
 
 def render_about(data):
@@ -1520,7 +1589,9 @@ def redirects():
 def headers():
     out = "/fonts/*\n  Cache-Control: public, max-age=31536000, immutable\n"
     out += "/cal/*\n  Content-Type: text/calendar; charset=utf-8\n  Cache-Control: public, max-age=3600\n"
-    out += "/e/*\n  X-Robots-Tag: noindex\n"  # screening pages are for sharing; they expire after the day
+    out += "/e/*\n  X-Robots-Tag: noindex\n"
+    out += "/listings.json\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=3600\n"
+    out += "/llms.txt\n  Content-Type: text/plain; charset=utf-8\n"  # screening pages are for sharing; they expire after the day
     if PREVIEW:  # keep images and other files out of search too, not just the pages
         out += "/*\n  X-Robots-Tag: noindex, nofollow\n"
     return out
@@ -1626,6 +1697,8 @@ def main():
         "site.webmanifest": manifest(),
         "_redirects": redirects(),
         "_headers": headers(),
+        "listings.json": listings_json(data, screenings, tmap, scraped),
+        "llms.txt": llms_txt(data, collections),
         f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY + "\n",
     }
     copies = {
