@@ -331,8 +331,8 @@ def site_graph():
 
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
-NAV = (("home", "/", "Today&rsquo;s Showings"), ("weekend", "/this-weekend/", "This Weekend"),
-       ("listings", "/listings/", "All Listings"), ("about", "/about/", "About"))
+NAV = (("home", "/", "Today&rsquo;s Showings"), ("listings", "/listings/", "All Listings"),
+       ("diy", "/diy/", "Underground &amp; DIY"), ("about", "/about/", "About"))
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
           ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
@@ -1332,7 +1332,7 @@ def collection_pages(data, screenings, tmap, today, updated):
                f'{", including " + plural(special, "special event") if special else ""}.')
     path = "/this-weekend/"
     pages[path] = page(f"LA Movies This Weekend, {dates}: Indie & Repertory Screenings | {SITE_NAME}",
-                       re.sub(r"<[^>]+>", "", counted) + " Times and tickets for every one.", path, "weekend",
+                       re.sub(r"<[^>]+>", "", counted) + " Times and tickets for every one.", path, None,
                        collection_page(f"This weekend in LA", dates, shows, tmap, today, counted,
                                        "Everything playing Friday through Sunday at the theaters "
                                        f'{NAME} follows. <a href="/q-and-a/">Q&amp;As</a>, '
@@ -1348,7 +1348,7 @@ def collection_pages(data, screenings, tmap, today, updated):
         path = f"/{key}/"
         desc = (f'{plural(len(shows), *what)} at {plural(k, "Los Angeles theater")}, with dates, times and tickets. '
                 'Updated every morning.') if shows else f"{about[:150]}"
-        pages[path] = page(f"{title} | {SITE_NAME}", desc, path, None,
+        pages[path] = page(f"{title} | {SITE_NAME}", desc, path, "diy" if key == "diy" else None,
                            collection_page(heading, eyebrow, shows, tmap, today, counted, about,
                                            f"Nothing is listed right now. New screenings are added every morning."),
                            updated, head=json_ld({"@graph": [breadcrumbs((heading, path))] + events_ld(shows, tmap, path)}))
