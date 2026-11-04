@@ -201,9 +201,10 @@ def times_html(times):
         for start, s in times)
 
 
-def tags_html(film):
+def tags_html(film, links=True):
+    """The tag row. links=False inside something that is already a link (a link can't hold another)."""
     tags = [f'<a class="tag" href="/festivals/{slug(film["festival"])}/">{t}</a>'
-            if t == "Festival" and film.get("festival") else f'<span class="tag">{t}</span>'
+            if t == "Festival" and film.get("festival") and links else f'<span class="tag">{t}</span>'
             for t in film["event_tags"]]
     tags += [f'<span class="tag format">{t}</span>' for t in film["format_tags"]]
     return f'<span class="tags">{"".join(tags)}</span>' if tags else ""
@@ -505,7 +506,7 @@ def render_home(data, screenings, now):
         # Each event opens its own page on the theater's site (ticket page when there's no event page).
         f'<li><a href="{escape(ev["film_url"] or ev["ticket_url"])}" target="_blank" rel="noopener">'
         f'<span class="when">{ev["times"][0][0].strftime("%a %b %-d")}</span>'
-        f'<div>{tags_html(ev)}<h3>{escape(ev["title"])}</h3></div>'
+        f'<div>{tags_html(ev, links=False)}<h3>{escape(ev["title"])}</h3></div>'
         f'<span class="where">{escape(tmap[ev["theater"]]["name"])}'
         f'{more_dates(more)}{"<br><span class=sold-note>Sold out</span>" if all(x["sold_out"] for _, x in ev["times"]) else ""}'
         f'</span></a></li>'
