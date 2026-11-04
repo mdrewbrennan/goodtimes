@@ -1091,12 +1091,18 @@ def render_about(data):
     <h1>To live and watch movies in LA</h1>
   </header>
   <section class="prose">
-    <p>{NAME} lists what&rsquo;s playing at Los Angeles&rsquo;s independent and repertory cinemas: revivals,
-      new indies, 35mm and 70mm prints, Q&amp;As, festivals and the one-night-only things that are easy to miss.</p>
-    <p>Every morning it reads each theater&rsquo;s own website and puts the day&rsquo;s screenings in one place.
-      Tickets are always sold by the theater, so the times link straight to them. If a theater&rsquo;s site
-      changes or goes down, its listings can be missing for a day until it&rsquo;s fixed.</p>
+    <p>I love movies. I love cinema. And I love film. If you have a special moving image playing somewhere
+      &ndash; let me know! I&rsquo;m <a href="https://www.instagram.com/spacemania/" target="_blank"
+      rel="noopener">@spacemania</a> on Instagram.</p>
     {contact}
+  </section>
+  <section class="prose">
+    <h2>What is a goodtime?</h2>
+    <p>{NAME} is an aggregate of what&rsquo;s playing at Los Angeles&rsquo;s independent and repertory cinemas:
+      revivals, new indies, 35mm and 70mm prints, Q&amp;As, festivals and the one-night-only things. I built this
+      because I feel like I constantly miss out on sick films.</p>
+    <p>Updated every morning at 7am from each theater&rsquo;s own website and puts the day&rsquo;s screenings in
+      one place. Tickets are always sold by the theater, so the times link straight to them.</p>
   </section>
   <section class="prose">
     <h2>Put it in your calendar</h2>
