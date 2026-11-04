@@ -247,6 +247,7 @@ footer .browse { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px 16px
 footer .browse a { color: var(--green); text-decoration: none; font-size: 13px; }
 footer .browse a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
+.days a.later { color: var(--green); }
 .listings { padding-block: 0 80px; }
 .to-top { position: fixed; z-index: 15; right: max(20px, calc(env(safe-area-inset-right, 0px) + 12px)); bottom: max(84px, calc(env(safe-area-inset-bottom, 0px) + 76px)); font: 500 14px var(--sans); color: var(--green); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .08); }
 .to-top:hover { border-color: var(--ink); }

@@ -315,8 +315,8 @@ DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angel
 NAV = (("home", "/", "Today&rsquo;s Showings"), ("weekend", "/this-weekend/", "This Weekend"),
        ("listings", "/listings/", "All Listings"), ("about", "/about/", "About"))
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
-BROWSE = (("/this-weekend/", "This weekend"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
-          ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"))
+BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
+          ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
 USES_TMDB = False  # set in main() when any film has TMDB data, which means the footer must credit TMDB
 
 
@@ -587,7 +587,7 @@ def render_picks(week, days, tmap, today, home=True):
 
 def render_picks_page(week, days, tmap, today):
     body = (render_picks(week, days, tmap, today, home=False) if week
-            else '<p class="note">No picks this week yet. <a class="more" href="/listings/#special">See every special event →</a></p>')
+            else '<p class="note">No picks this week yet. <a class="more" href="/special-events/">See every special event →</a></p>')
     label = f'Week of {week["start"].strftime("%B %-d")}' if week else "This week"
     return f"""
 <main><div class="wrap">
@@ -647,7 +647,7 @@ def render_home(data, screenings, now):
   <section class="upcoming">
     <div class="day-head"><h2>Upcoming special events</h2></div>
     <ul class="upcoming-list">{rows or '<li class="note">No special events posted right now.</li>'}</ul>
-    <p class="upcoming-foot"><a class="more" href="/listings/#special">See every special event in the listings →</a></p>
+    <p class="upcoming-foot"><a class="more" href="/special-events/">See every special event →</a></p>
   </section>
 </div></main>"""
 
@@ -657,6 +657,7 @@ def render_listings(data, screenings, now):
     theaters = theater_order(data["theaters"])
     tmap = {t["id"]: t for t in theaters}
 
+    screenings = [x for x in screenings if x[0].date() < today + timedelta(days=LISTINGS_DAYS)]
     sections, nav = [], []
     for day, venues in by_day(screenings, theaters).items():
         html, _, special = day_section(day, venues, tmap, today)
@@ -718,11 +719,13 @@ def render_listings(data, screenings, now):
     </div>
   </div>
   <p class="near-status" id="near-status" hidden></p>
-  <div class="days">{"".join(nav)}</div>
+  <div class="days">{"".join(nav)}<a class="later" href="/dates/"><span>Later</span>→</a></div>
 </div></nav>
 <main class="listings"><div class="wrap">
   {"".join(sections) or '<p class="empty">No upcoming screenings found.</p>'}
-  <p class="empty" id="no-results" hidden>Nothing matches. Try another search or filter.</p>
+  <p class="empty" id="no-results" hidden>Nothing matches in the next two weeks. Try another search or filter, or
+    look through <a href="/dates/">later dates</a>.</p>
+  <p class="upcoming-foot"><a class="more" href="/dates/">Later dates →</a></p>
   <button class="to-top" id="to-top" type="button" hidden>↑ Back to top</button>
 </div></main>"""
 
@@ -1063,7 +1066,7 @@ def render_event(f, tmap, today):
       <div class="times">{times_html(f["times"])}</div>
       {actions_html(f, tmap)}
       {blurb}
-      <p class="event-foot"><a class="more" href="/listings/#d{day.isoformat()}">Everything playing {day.strftime("%a %b %-d")} →</a></p>
+      <p class="event-foot"><a class="more" href="/dates/{day.isoformat()}/">Everything playing {day.strftime("%a %b %-d")} →</a></p>
     </div>
   </article>
 </div></main>"""
@@ -1080,7 +1083,7 @@ def render_festival(name, screenings, tmap, today):
     <h1>{escape(name)}</h1>
   </header>
   {sections}
-  <p class="upcoming-foot"><a class="more" href="/listings/#special">Every special event in the listings →</a></p>
+  <p class="upcoming-foot"><a class="more" href="/special-events/">Every special event →</a></p>
 </div></main>"""
 
 
@@ -1090,6 +1093,7 @@ def render_festival(name, screenings, tmap, today):
 # can read the film, time, place and ticket link as facts instead of guessing from the text.
 
 THEATER_DAYS = 30     # how far ahead a theater's page lists
+LISTINGS_DAYS = 14    # /listings/ covers this many days; every date also has its own page under /dates/
 AREA_DAYS = 7
 COLLECTION_DAYS = 60
 # A sentence or two about a theater in your own words, shown at the top of its page. Keyed by theater id.
@@ -1211,6 +1215,9 @@ def is_double(s):
 
 # path, page title, eyebrow, heading, what the count is of (one, many), an evergreen sentence, which screenings
 COLLECTIONS = [
+    ("special-events", "Special Film Screenings & Events in Los Angeles", "One night only", "Special events in LA",
+     ("special event", "special events"), "Q&amp;As, premieres, festivals, live scores, sing-alongs, double features and "
+     "other one-off screenings at LA's indie and repertory theaters.", lambda s: s["is_special"]),
     ("35mm", "35mm Film Screenings in Los Angeles", "Shown on film", "35mm screenings in LA", ("screening on 35mm", "screenings on 35mm"),
      "Showings the theater itself lists as a 35mm print, across every LA indie and repertory theater "
      f"{NAME} follows.", lambda s: "35mm" in s["format_tags"]),
@@ -1302,6 +1309,27 @@ def area_link(a):
 
 
 AREA_PAGES = set()  # areas with two or more theaters; filled in by main()
+UNLISTED = set()    # generated pages kept out of the sitemap (dates more than LISTINGS_DAYS ahead)
+
+
+def render_dates_index(days, today):
+    months = OrderedDict()
+    for day, n in days.items():
+        months.setdefault(day.strftime("%B %Y"), []).append(
+            f'<li><a href="/dates/{day.isoformat()}/">{day_label(day, today)}, {day.strftime("%b %-d")}</a>'
+            f'<span class="count">{plural(n, "screening")}</span></li>')
+    rows = "".join(f'<h2 class="area-head">{m}</h2><ul class="theater-list">{"".join(items)}</ul>'
+                   for m, items in months.items())
+    return f"""
+<main><div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">{plural(len(days), "date")} with screenings</p>
+    <h1>Every date</h1>
+  </header>
+  <section class="intro"><p class="about-page">What&rsquo;s playing at LA&rsquo;s indie and repertory theaters on any
+    day theaters have announced so far. <a href="/listings/">The listings</a> cover the next two weeks with filters.</p></section>
+  {rows}
+</div></main>"""
 
 
 def collection_pages(data, screenings, tmap, today, updated):
@@ -1359,6 +1387,30 @@ def collection_pages(data, screenings, tmap, today, updated):
                            collection_page(heading, eyebrow, shows, tmap, today, counted, about,
                                            f"Nothing is listed right now. New screenings are added every morning."),
                            updated, head=json_ld({"@graph": [breadcrumbs((heading, path))] + events_ld(shows, tmap, path)}))
+
+    # A page per date, and an index of them
+    by_date = OrderedDict()
+    for x in screenings:
+        by_date.setdefault(x[0].date(), []).append(x)
+    for day, shows in by_date.items():
+        path = f"/dates/{day.isoformat()}/"
+        k = len({s["theater"] for _, s in shows})
+        nice = day.strftime("%A, %B %-d")
+        counted = f'{plural(len(shows), "screening")} at {k} LA indie and repertory theater{"" if k == 1 else "s"} on {nice}.'
+        near = day < today + timedelta(days=LISTINGS_DAYS)
+        if not near:
+            UNLISTED.add(path)
+        pages[path] = page(f"What's Playing in LA on {day.strftime('%A, %b %-d')}: Indie & Repertory Showtimes | {SITE_NAME}",
+                           re.sub(r"<[^>]+>", "", counted) + " Times and tickets for every one.", path, None,
+                           collection_page(f"Showing in LA on {nice}", day_label(day, today), shows, tmap, today, counted,
+                                           f'<a href="/dates/">Every date</a> · <a href="/this-weekend/">This weekend</a>',
+                                           "Nothing listed."),
+                           updated, indexable=near,
+                           head=json_ld({"@graph": [breadcrumbs(("Dates", "/dates/"), (nice, path))] + events_ld(shows, tmap, path)}))
+    pages["/dates/"] = page(f"LA Indie & Repertory Screenings by Date | {SITE_NAME}",
+                            f"Every date with screenings announced at LA's indie and repertory theaters, "
+                            f"{plural(len(by_date), 'day')} ahead.", "/dates/", None,
+                            render_dates_index(OrderedDict((d, len(x)) for d, x in by_date.items()), today), updated)
 
     for a in AREA_PAGES:
         ids = {t["id"] for t in theaters if area(t) == a}
@@ -1568,7 +1620,7 @@ def main():
         "404.html": not_found,
         "robots.txt": robots_txt(),
         "sitemap.xml": sitemap(["/", "/listings/", "/this-weekend/", "/theaters/", "/about/"] + (["/picks/"] if week else [])
-                               + [p for p in collections if p not in ("/this-weekend/", "/theaters/")]
+                               + [p for p in collections if p not in ("/this-weekend/", "/theaters/") and p not in UNLISTED]
                                + [f"/festivals/{slug(n)}/" for n in festivals],
                                scraped.isoformat(timespec="seconds")),
         "site.webmanifest": manifest(),
@@ -1590,7 +1642,7 @@ def main():
     ico = favicon_ico((ROOT / "logo" / "favicon-48.png").read_bytes())
     for out in (SITE, NETLIFY):
         (out / "listings.html").unlink(missing_ok=True)  # replaced by listings/index.html
-        for folder in ["e", "cal", "festivals", "theaters"] + [p.strip("/") for p in collections]:
+        for folder in ["e", "cal", "festivals", "theaters", "dates"] + [p.strip("/") for p in collections]:
             shutil.rmtree(out / folder, ignore_errors=True)
         for name, text in {**files, **generated}.items():
             (out / name).parent.mkdir(parents=True, exist_ok=True)
