@@ -81,6 +81,11 @@ GENRE_NAMES = {"science fiction": "Sci-Fi", "sci-fi": "Sci-Fi", "biopic": "Biogr
 
 # Each theater's area (for the theater menu and the order venues appear in) and rough coordinates (for
 # "Near me"). Areas run west to east, then the outliers.
+# DIY, underground and micro-cinemas: artist-run rooms, storefronts and pop-up series rather than cinemas
+# with a daily program. They get their own look, a DIY filter on the listings and a /diy/ page.
+DIY_THEATERS = {"whammy", "now-instant", "arts2220", "prs", "cinemasaloon", "veggiecloud", "muscle"}
+DIY_LABEL = "DIY · Micro-cinema"
+
 AREAS = ["Westside", "Hollywood & Mid-City", "Eastside", "Downtown", "Pasadena", "South Bay"]
 GEO = {
     "aero": ("Westside", 34.0406, -118.4960), "laemmle-royal": ("Westside", 34.0453, -118.4485),
@@ -179,6 +184,7 @@ def tag(screening):
     screening["event_tags"] = events
     screening["format_tags"] = [name for name, pat in FORMAT_TAGS if re.search(pat, text, re.I)]
     screening["is_special"] = bool(events)
+    screening["is_diy"] = screening["theater"] in DIY_THEATERS
     screening["guests"] = guest_line(screening) if "Guests in person" in events else None
     screening["genre_list"] = genres(screening)
     screening["id"] = short_id(screening["theater"], screening["title"], screening["start"])
@@ -196,6 +202,11 @@ def day_label(day, today):
     if day == today + timedelta(days=1):
         return "Tomorrow"
     return day.strftime("%A")
+
+
+def short_day(day, today):
+    """"Today", "Tomorrow" or the weekday's short name ("Sat"), for tight spaces."""
+    return day_label(day, today) if day <= today + timedelta(days=1) else day.strftime("%a")
 
 
 def link(url, text):
@@ -323,7 +334,7 @@ DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angel
 NAV = (("home", "/", "Today&rsquo;s Showings"), ("weekend", "/this-weekend/", "This Weekend"),
        ("listings", "/listings/", "All Listings"), ("about", "/about/", "About"))
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
-BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
+BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
           ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
 USES_TMDB = False  # set in main() when any film has TMDB data, which means the footer must credit TMDB
 
@@ -459,7 +470,7 @@ def film_row(f, tmap):
     blurb = (f'<p class="blurb">{escape(clip(f["blurb"], BLURB_CHARS))}</p>'
              if f.get("blurb") and f["blurb"].strip().rstrip(".!") != (f.get("guests") or "").rstrip(".!") else "")
     poster = poster_html(f)
-    return (f'<li class="film{" has-poster" if poster else ""}" id="f-{event_id(f)}" data-special="{int(f["is_special"])}" '
+    return (f'<li class="film{" has-poster" if poster else ""}" id="f-{event_id(f)}" data-special="{int(f["is_special"])}" data-diy="{int(f["is_diy"])}" '
             f'data-search="{search}" data-genres="{escape("|".join(f["genre_list"]))}">{poster}'
             f'<div class="film-body">{tags_html(f)}<h4>{film_link(f)}</h4>'
             f'{meta_html(f)}{guests_html(f)}{blurb}{actions_html(f, tmap)}</div>'
@@ -469,6 +480,11 @@ def film_row(f, tmap):
 def venue_link(t):
     """A theater's name, linked to its page on this site (or to its own site when it has no page here)."""
     return f'<a href="{theater_path(t)}">{escape(t["name"])}</a>' if has_page(t) else link(t["url"], escape(t["name"]))
+
+
+def diy_stamp(tid):
+    """The DIY badge under a micro-cinema's name."""
+    return f'<p class="diy-stamp"><a href="/diy/">{DIY_LABEL}</a></p>' if tid in DIY_THEATERS else ""
 
 
 def operator_html(t):
@@ -488,9 +504,9 @@ def day_section(day, venues, tmap, today, heading=True):
         geo = GEO.get(tid)
         coords = f' data-lat="{geo[1]}" data-lng="{geo[2]}"' if geo else ""
         blocks.append(
-            f'<div class="venue" data-theater="{tid}"{coords}>'
+            f'<div class="venue{" diy" if tid in DIY_THEATERS else ""}" data-theater="{tid}"{coords}>'
             f'<header class="venue-head"><h3 class="venue-name">{venue_link(t)}</h3>'
-            f'{operator_html(t)}'
+            f'{operator_html(t)}{diy_stamp(tid)}'
             f'<p class="venue-meta"><span class="hood">{escape(t["neighborhood"])}</span>'
             f'<span class="dist" hidden></span></p></header>'
             f'<ul>{"".join(film_row(f, tmap) for f in films.values())}</ul></div>')
@@ -639,6 +655,26 @@ def render_home(data, screenings, now):
         f'</span></a></li>'
         for ev, more in events[:10])
 
+    # DIY and micro-cinemas: the next few of their screenings, one row per film and day, today included.
+    diy_films = OrderedDict()
+    for start, x in screenings:
+        if x["is_diy"]:
+            diy_films.setdefault((x["theater"], x["title"], start.date()), {**x, "times": []})["times"].append((start, x))
+    diy_rows = "".join(
+        f'<li><a href="{escape(ev["film_url"] or ev["ticket_url"])}" target="_blank" rel="noopener">'
+        f'<span class="when">{short_day(ev["times"][0][0].date(), today)}'
+        f'<b>{ev["times"][0][0].strftime("%b %-d")}</b>{fmt_time(ev["times"][0][0])}</span>'
+        f'<div>{tags_html(ev, links=False)}<h3>{escape(ev["title"])}</h3></div>'
+        f'<span class="where">{escape(tmap[ev["theater"]]["name"])}<br>{escape(tmap[ev["theater"]]["neighborhood"])}</span></a></li>'
+        for ev in list(diy_films.values())[:8])
+    diy_html = (f"""
+  <section class="diy-block">
+    <div class="day-head"><h2>DIY &amp; micro-cinemas</h2><span class="diy-stamp">Underground LA</span></div>
+    <p class="diy-intro">Artist-run rooms, storefront screens and pop-up series. Small rooms, few seats, often one night only.</p>
+    <ul class="diy-list">{diy_rows}</ul>
+    <p class="upcoming-foot"><a class="more" href="/diy/">See every DIY screening →</a></p>
+  </section>""" if diy_rows else "")
+
     venues = sum(1 for v in days.get(today, {}).values() if v)
     return f"""
 <main><div class="wrap">
@@ -652,6 +688,7 @@ def render_home(data, screenings, now):
   </header>
   {picks_html}
   {today_html}
+  {diy_html}
   <section class="upcoming">
     <div class="day-head"><h2>Upcoming special events</h2></div>
     <ul class="upcoming-list">{rows or '<li class="note">No special events posted right now.</li>'}</ul>
@@ -712,6 +749,7 @@ def render_listings(data, screenings, now):
       </div>
     </details>
     <button class="chip" id="special" type="button" aria-pressed="false">Special events</button>
+    <button class="chip chip-diy" id="diy" type="button" aria-pressed="false">DIY</button>
     <button class="chip" id="near" type="button" aria-pressed="false">Near me</button>
     <input class="search" id="search" type="search" placeholder="Search films, directors, guests, 35mm…" aria-label="Search listings">
   </div>
@@ -734,6 +772,7 @@ LISTINGS_SCRIPT = """<script>
   });
   const [theaterPicker, genrePicker] = pickers;
   const special = document.getElementById("special");
+  const diy = document.getElementById("diy");
   const near = document.getElementById("near");
   const search = document.getElementById("search");
   const pressed = b => b.getAttribute("aria-pressed") === "true";
@@ -752,7 +791,7 @@ LISTINGS_SCRIPT = """<script>
   function apply() {
     const q = search.value.trim().toLowerCase();
     const chosen = label(theaterPicker), genres = label(genrePicker);
-    const onlySpecial = pressed(special);
+    const onlySpecial = pressed(special), onlyDiy = pressed(diy);
     let any = false;
     document.querySelectorAll(".day").forEach(day => {
       let dayVisible = false;
@@ -762,6 +801,7 @@ LISTINGS_SCRIPT = """<script>
           const ok = (chosen.size === 0 || chosen.has(v.dataset.theater))
             && (genres.size === 0 || f.dataset.genres.split("|").some(g => genres.has(g)))
             && (!onlySpecial || f.dataset.special === "1")
+            && (!onlyDiy || f.dataset.diy === "1")
             && (!q || f.dataset.search.includes(q));
           f.hidden = !ok;
           venueVisible ||= ok;
@@ -796,6 +836,7 @@ LISTINGS_SCRIPT = """<script>
   document.addEventListener("click", e => pickers.forEach(p => { if (!p.el.contains(e.target)) p.el.open = false; }));
   document.addEventListener("keydown", e => { if (e.key === "Escape") pickers.forEach(p => { p.el.open = false; }); });
   special.addEventListener("click", () => { press(special, !pressed(special)); apply(); });
+  diy.addEventListener("click", () => { press(diy, !pressed(diy)); apply(); });
   search.addEventListener("input", apply);
 
   // Near me: sorts each day's theaters by distance. Asks for location only when tapped.
@@ -853,12 +894,13 @@ LISTINGS_SCRIPT = """<script>
   });
 
   // /listings/?q=… searches (the homepage search box sends people here). /listings/#special turns the
-  // special events filter on; /listings/#<theater id> picks a theater; /listings/#f-<id> is one film.
+  // special events filter on (#diy the DIY one); /listings/#<theater id> picks a theater; /listings/#f-<id> is one film.
   const q = new URLSearchParams(location.search).get("q");
   if (q) search.value = q;
   function fromHash() {
     const hash = location.hash.slice(1);
     if (hash === "special") press(special, true);
+    else if (hash === "diy") press(diy, true);
     else if (theaterPicker.boxes.some(b => b.value === hash)) theaterPicker.boxes.forEach(b => { b.checked = b.value === hash; });
     apply();
   }
@@ -1148,6 +1190,10 @@ COLLECTIONS = [
      "Screenings where a director, actor or other guest is scheduled to appear, usually for a Q&A or an introduction. "
      "Guests are named when the theater says who's coming; plans change, so check the theater's page before you go.",
      lambda s: "Guests in person" in s["event_tags"]),
+    ("diy", "DIY, Underground & Micro-Cinema Screenings in LA", DIY_LABEL, "DIY and micro-cinemas in LA",
+     ("DIY screening", "DIY screenings"), "Artist-run rooms, storefront micro-cinemas, archives and pop-up series: "
+     "the small, one-off screenings you won't find on a multiplex schedule. Seats are few, so check the venue's page.",
+     lambda s: s["is_diy"]),
     ("double-features", "Double Features in Los Angeles", "Two films, one bill", "Double features in LA",
      ("double bill", "double bills"), "Two films programmed together on one bill at LA's repertory theaters.", is_double),
 ]
