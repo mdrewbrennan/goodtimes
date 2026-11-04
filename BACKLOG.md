@@ -86,7 +86,7 @@ neighborhood), then win on point of view, design and how easy it is to make plan
 
 ## Later: what makes it ours
 
-15. **"Worth leaving the house for" picks** (M). A short weekly list with a sentence of why for each
+15. **"Worth leaving the house for" picks** (M). ✅ Homepage section and /picks/ page built Nov 3; waiting on the first week's picks. Newsletter still to do. A short weekly list with a sentence of why for each
     pick, on the homepage and as a newsletter. This is the thing Revival Hub structurally can't do, and
     it's the clearest answer to "how is this different."
 16. **Letterboxd watchlist match** ✅ built Nov 3 (M). Alaina suggested Letterboxd; their API is hard to get (Brannon

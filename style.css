@@ -125,6 +125,21 @@ a.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
 .act-menu .menu a { display: block; padding: 7px 10px; border-radius: 8px; font-size: 14px; text-decoration: none; white-space: nowrap; }
 .act-menu .menu a:hover { background: var(--wash); }
 
+/* Weekly picks: homepage and /picks/ */
+.picks { margin: 40px 0 56px; }
+.picks + .day { margin-top: 0; }
+.pick-intro { margin: 14px 0 0; max-width: 62ch; }
+.pick-list { list-style: none; margin: 0; padding: 0; }
+.pick { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+.pick.has-poster { grid-template-columns: 64px minmax(0, 1fr); }
+.pick h3 { margin: 0 0 6px; font: 600 20px/1.25 var(--sans); letter-spacing: -0.01em; }
+.pick h3 a { color: inherit; text-decoration: none; }
+.pick h3 a:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.pick .why { margin: 0 0 8px; max-width: 62ch; }
+.pick-when { list-style: none; margin: 0; padding: 0; font: 400 13px/1.6 var(--sans); color: var(--muted); }
+.pick-when a { color: var(--green); text-decoration: none; font-weight: 500; }
+.pick-when .muted, .pick-when.muted { color: var(--muted); }
+
 /* Homepage: upcoming special events */
 .upcoming { margin-top: 64px; }
 .upcoming-list { list-style: none; margin: 0; padding: 0; }

@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import struct
+import sys
 import urllib.parse
 from collections import OrderedDict
 from datetime import datetime, timedelta
@@ -483,13 +484,120 @@ def more_dates(n):
     return f'<br>+{n} more date{"s" if n > 1 else ""}' if n else ""
 
 
+# ---------- weekly picks ----------
+# Written by hand in picks.md; see the comments at the top of that file. The newest week whose start date has
+# come shows for 7 days on the homepage and at /picks/. With no current week, the section is left out.
+
+PICKS = ROOT / "picks.md"
+PICK_LINE = re.compile(r"^[-*]\s+(?:\*\*(.+?)\*\*|(.+?))(?:\s+@\s+(.+?))?\s+[—–]\s+(.+)$")
+WEEK_FORMATS = ("%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y", "%Y-%m-%d", "%B %d", "%b %d")
+
+
+def parse_week(text, today):
+    text = re.sub(r"^week of\s+", "", text.strip(), flags=re.I)
+    text = re.sub(r"(\d)(st|nd|rd|th)\b", r"\1", text).replace(".", "")
+    for fmt in WEEK_FORMATS:
+        try:
+            day = datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+        if "%Y" not in fmt:  # no year written: the one that puts the date nearest today
+            day = min((day.replace(year=today.year + d) for d in (-1, 0, 1)), key=lambda x: abs((x - today).days))
+        return day
+    return None
+
+
+def read_picks(today):
+    """The current week from picks.md: {start, intro, picks: [{title, at, why}]}, or None."""
+    if not PICKS.exists():
+        return None
+    text = re.sub(r"<!--.*?-->", "", PICKS.read_text(), flags=re.S)
+    weeks, week = [], None
+    for line in (x.strip() for x in text.splitlines()):
+        if line.startswith("## "):
+            start = parse_week(line[3:], today)
+            if not start:
+                print(f"picks.md: couldn't read the date in {line!r}; skipping that week", file=sys.stderr)
+            week = {"start": start, "intro": [], "picks": []} if start else None
+            weeks += [week] if week else []
+        elif not line or week is None or line.startswith("#"):
+            continue
+        elif PICK_LINE.match(line):
+            m = PICK_LINE.match(line)
+            week["picks"].append({"title": (m[1] or m[2]).strip(), "at": m[3], "why": m[4].strip()})
+        elif week["picks"]:
+            week["picks"][-1]["why"] += " " + line  # a reason that runs onto the next line
+        else:
+            week["intro"].append(line)
+    live = [w for w in weeks if w["picks"] and w["start"] <= today < w["start"] + timedelta(days=7)]
+    return max(live, key=lambda w: w["start"]) if live else None
+
+
+def pick_showings(pick, films, tmap, end):
+    """This week's screenings of a pick: exact title matches first, then titles that contain it."""
+    want, at = tmdb.norm(pick["title"]), tmdb.norm(pick["at"] or "")
+    films = [f for f in films if f["times"][0][0].date() < end
+             and (not at or at in tmdb.norm(tmap[f["theater"]]["name"]))]
+    names = lambda f: {tmdb.norm(tmdb.core_title(f["title"])), tmdb.norm((f.get("tmdb") or {}).get("title"))}
+    exact = [f for f in films if want in names(f)]
+    return exact or [f for f in films if len(want) >= 4 and want in tmdb.norm(f["title"])]
+
+
+def prose(text):
+    """Escaped text, with *asterisks* for italic film titles."""
+    return re.sub(r"\*(.+?)\*", r"<i>\1</i>", escape(text))
+
+
+def render_picks(week, days, tmap, today, home=True):
+    films = [f for venues in days.values() for fs in venues.values() for f in fs.values()]
+    end = week["start"] + timedelta(days=7)
+    items = []
+    for p in week["picks"]:
+        shows = sorted(pick_showings(p, films, tmap, end), key=lambda f: f["times"][0][0])
+        poster = poster_html(shows[0]) if shows else ""
+        title = escape(display_title(p["title"]))
+        title = f'<a href="/e/{event_id(shows[0])}/">{title}</a>' if shows else title
+        when = "".join(
+            f'<li><a href="/e/{event_id(f)}/">{day_label(f["times"][0][0].date(), today)} '
+            f'{f["times"][0][0].strftime("%b %-d")}</a> · {escape(tmap[f["theater"]]["name"])} · '
+            f'{", ".join(fmt_time(t) for t, _ in f["times"])}</li>' for f in shows[:4])
+        more = f'<li class="muted">+{len(shows) - 4} more</li>' if len(shows) > 4 else ""
+        when = (f'<ul class="pick-when">{when}{more}</ul>' if shows
+                else '<p class="pick-when muted">No showings left this week.</p>')
+        items.append(f'<li class="pick{" has-poster" if poster else ""}">{poster}<div><h3>{title}</h3>'
+                     f'<p class="why">{prose(p["why"])}</p>{when}</div></li>')
+    intro = "".join(f'<p class="pick-intro">{prose(x)}</p>' for x in week["intro"])
+    label = f'Week of {week["start"].strftime("%b %-d")}'
+    foot = '<p class="upcoming-foot"><a class="more" href="/picks/">This week&rsquo;s picks, to share →</a></p>' if home else ""
+    heading = (f'<div class="day-head"><h2>Worth leaving the house for</h2><span class="count">{label}</span></div>'
+               if home else "")
+    return f'<section class="picks">{heading}{intro}<ol class="pick-list">{"".join(items)}</ol>{foot}</section>'
+
+
+def render_picks_page(week, days, tmap, today):
+    body = (render_picks(week, days, tmap, today, home=False) if week
+            else '<p class="note">No picks this week yet. <a class="more" href="/listings/#special">See every special event →</a></p>')
+    label = f'Week of {week["start"].strftime("%B %-d")}' if week else "This week"
+    return f"""
+<main><div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">{label}</p>
+    <h1>Worth leaving the house for</h1>
+  </header>
+  {body}
+</div></main>"""
+
+
 def render_home(data, screenings, now):
     today = now.date()
     tmap = {t["id"]: t for t in data["theaters"]}
     days = by_day(screenings, theater_order(data["theaters"]))
+    week = read_picks(today)
+    picks_html = render_picks(week, days, tmap, today) if week else ""
 
     if today in days:
-        today_html, n, _ = day_section(today, days[today], tmap, today, heading=False)
+        # With picks between the page title and today's list, the list needs its own "Today" heading.
+        today_html, n, _ = day_section(today, days[today], tmap, today, heading=bool(week))
     else:
         n, nxt = 0, next(iter(days), None)
         today_html = '<p class="note">Nothing else on screen today.' + (
@@ -523,6 +631,7 @@ def render_home(data, screenings, now):
       <button class="chip" type="submit">Search</button>
     </form>
   </header>
+  {picks_html}
   {today_html}
   <section class="upcoming">
     <div class="day-head"><h2>Upcoming special events</h2></div>
@@ -1098,6 +1207,14 @@ def main():
     about = page(f"About | {SITE_NAME}", "How GOODTIMES gathers LA's indie and repertory screenings, the theaters it "
                  "covers, and calendars you can subscribe to.", "/about/", "about", render_about(data), updated)
 
+    week = read_picks(today)
+    picks_desc = (f'This week\'s LA screenings worth leaving the house for: '
+                  + ", ".join(display_title(p["title"]) for p in week["picks"])[:150] if week
+                  else "A short weekly list of LA screenings worth leaving the house for.")
+    picks = page(f"Worth Leaving the House For: This Week's LA Screenings | {SITE_NAME}", picks_desc, "/picks/", None,
+                 render_picks_page(week, by_day(screenings, theater_order(data["theaters"])), tmap, today), updated,
+                 indexable=bool(week))
+
     # Generated per screening, film and festival; cleared each build so past ones don't linger locally.
     generated = {}
     for day, venues in by_day(screenings, theater_order(data["theaters"])).items():
@@ -1128,9 +1245,10 @@ def main():
         "index.html": home,
         "listings/index.html": listings,
         "about/index.html": about,
+        "picks/index.html": picks,
         "404.html": not_found,
         "robots.txt": robots_txt(),
-        "sitemap.xml": sitemap(["/", "/listings/", "/about/"] + [f"/festivals/{slug(n)}/" for n in festivals],
+        "sitemap.xml": sitemap(["/", "/listings/", "/about/"] + (["/picks/"] if week else []) + [f"/festivals/{slug(n)}/" for n in festivals],
                                scraped.isoformat(timespec="seconds")),
         "site.webmanifest": manifest(),
         "_redirects": redirects(),

@@ -30,6 +30,7 @@ python3 -m http.server 8765 -d site   # the pages use site-root links, so serve 
   the link-preview card (`og-image.png`) are drawn from them by `render_images.sh`; rerun it after changing them.
 - `fonts/`: Inter, served from the site itself (SIL Open Font License, in `fonts/OFL.txt`).
 - `indexnow.py`: tells Bing and the search engines that share its index which pages changed.
+- `picks.md`: the weekly "Worth leaving the house for" picks, written by hand (see below).
 - `tmdb.py`: matches each film to The Movie Database for its poster, score, trailer and genres (see below).
 
 Besides the homepage and listings, the build writes an About page (`/about/`), a page per festival
@@ -47,6 +48,13 @@ themoviedb.org, then Settings → API. Set it as `TMDB_API_KEY` (or the longer r
 in your shell for local runs and in Netlify (Site configuration → Environment variables) for the daily build.
 Without it the site still builds, with text-only cards. A film only gets a poster when TMDB agrees on its
 title and on its director or year; `data/tmdb.json` caches the matches.
+
+## Weekly picks
+
+Write each week's picks in `picks.md`: a `## Week of November 9, 2026` heading, then one line per film, like
+`- **The Black Cat** — why it's worth it.` The instructions are at the top of that file. Commit and push it, and
+the next build shows the picks on the homepage and at `/picks/` for 7 days from that date. The build fills in
+each film's dates, theaters, times and poster. With no current week, the section is hidden.
 
 ## Deploying
 
