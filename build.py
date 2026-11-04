@@ -93,6 +93,17 @@ GEO = {
     "arts2220": ("Eastside", 34.0688, -118.2700), "vidiots": ("Eastside", 34.1330, -118.2108),
     "alamo-dtla": ("Downtown", 34.0480, -118.2590), "now-instant": ("Downtown", 34.0661, -118.2387),
     "landmark-pasadena": ("Pasadena", 34.1458, -118.1366), "gardena": ("South Bay", 33.8960, -118.3266),
+    "academy-museum": ("Hollywood & Mid-City", 34.0637, -118.3609), "usc": ("Downtown", 34.0219, -118.2856),
+    "hammer": ("Westside", 34.0597, -118.4434), "finearts": ("Westside", 34.0664, -118.3787),
+    "alex": ("Eastside", 34.1488, -118.2551), "laemmle-glendale": ("Eastside", 34.1478, -118.2563),
+    "laemmle-monica": ("Westside", 34.0167, -118.4960), "laemmle-noho": ("Valley", 34.1673, -118.3762),
+    "laemmle-town": ("Valley", 34.1597, -118.5048), "laemmle-newhall": ("Valley", 34.3796, -118.5318),
+    "veggiecloud": ("Eastside", 34.1077, -118.2009), "cinemasaloon": ("Hollywood & Mid-City", 34.0331, -118.3602),
+    "humanresources": ("Downtown", 34.0669, -118.2316), "coaxial": ("Downtown", 34.0302, -118.2633),
+    "roadhouse": ("Eastside", 34.0906, -118.2209),
+    "redcat": ("Downtown", 34.0561, -118.2500), "velaslavasay": ("Downtown", 34.0342, -118.2869),
+    "palace": ("Downtown", 34.0462, -118.2520),
+    "eastwood": ("Hollywood & Mid-City", 34.0904, -118.3083), "leroys": ("Downtown", 34.0627, -118.2394),
 }
 CITIES = {"Santa Monica", "Beverly Hills", "West Hollywood", "Pasadena", "Gardena"}  # neighborhoods that are their own city
 
@@ -199,7 +210,7 @@ def link(url, text):
 def times_html(times):
     return "".join(
         (f'<a class="time sold-out" title="Sold out" ' if s["sold_out"] else '<a class="time" ')
-        + f'href="{escape(s["ticket_url"])}" target="_blank" rel="noopener">{fmt_time(start)}</a>'
+        + f'href="{escape(s["ticket_url"])}" target="_blank" rel="noopener" data-start="{start.isoformat()}">{fmt_time(start)}</a>'
         for start, s in times)
 
 
@@ -269,7 +280,7 @@ def actions_html(f, tmap):
     return f'<div class="actions">{"".join(acts)}</div>'
 
 
-LOGO = ROOT / "logo" / "goodtimes.svg"
+LOGO = ROOT / "logo" / "goodtimes-neon.svg"
 
 
 ICON = ROOT / "logo" / "goodtimes-icon.svg"
@@ -314,7 +325,7 @@ def site_graph():
 
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
-NAV = (("home", "/", "Today&rsquo;s Showings"), ("weekend", "/this-weekend/", "This Weekend"),
+NAV = (("home", "/", "Today"), ("weekend", "/this-weekend/", "This Weekend"),
        ("listings", "/listings/", "All Listings"), ("about", "/about/", "About"))
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
@@ -437,13 +448,6 @@ def special_events(screenings):
 
 # ---------- pages ----------
 
-def watch_keys(f):
-    """Normalized titles a Letterboxd watchlist entry can match, plus the film's year."""
-    info = f.get("tmdb") or {}
-    keys = {tmdb.norm(t) for t in (tmdb.core_title(f["title"]), info.get("title")) if t}
-    return "|".join(sorted(k for k in keys if k)), info.get("year") or f["year"] or ""
-
-
 BLURB_CHARS = 220
 
 
@@ -452,18 +456,17 @@ def clip(text, n):
     return text if len(text) <= n else text[:n].rsplit(" ", 1)[0].rstrip(",;:.—–- ") + "…"
 
 
-def film_row(f, tmap):
+def film_row(f, tmap, blurb=True):
+    """blurb=False leaves out the description, for the homepage's at-a-glance list."""
     words = [f["title"], f["director"] or "", f.get("guests") or "", f.get("festival") or ""]
     search = escape(" ".join(words + f["event_tags"] + f["format_tags"] + f["genre_list"]).lower())
     # The guest line often is the whole blurb; don't print it twice.
     # Cards show two lines, so a long blurb is cut to about that; the screening's own page (/e/) has all of it.
     blurb = (f'<p class="blurb">{escape(clip(f["blurb"], BLURB_CHARS))}</p>'
-             if f.get("blurb") and f["blurb"].strip().rstrip(".!") != (f.get("guests") or "").rstrip(".!") else "")
-    keys, year = watch_keys(f)
+             if blurb and f.get("blurb") and f["blurb"].strip().rstrip(".!") != (f.get("guests") or "").rstrip(".!") else "")
     poster = poster_html(f)
     return (f'<li class="film{" has-poster" if poster else ""}" id="f-{event_id(f)}" data-special="{int(f["is_special"])}" '
-            f'data-search="{search}" data-genres="{escape("|".join(f["genre_list"]))}" '
-            f'data-keys="{escape(keys)}" data-year="{year}">{poster}'
+            f'data-search="{search}" data-genres="{escape("|".join(f["genre_list"]))}">{poster}'
             f'<div class="film-body">{tags_html(f)}<h4>{film_link(f)}</h4>'
             f'{meta_html(f)}{guests_html(f)}{blurb}{actions_html(f, tmap)}</div>'
             f'<div class="times">{times_html(f["times"])}</div></li>')
@@ -479,7 +482,7 @@ def operator_html(t):
     return f'<p class="venue-op">{escape(t["operator"])}</p>' if t.get("operator") else ""
 
 
-def day_section(day, venues, tmap, today, heading=True):
+def day_section(day, venues, tmap, today, heading=True, blurbs=True):
     """One day's screenings grouped by theater. Returns (html, screening count, has special event)."""
     blocks, n, special = [], 0, False
     for tid, films in venues.items():
@@ -496,7 +499,7 @@ def day_section(day, venues, tmap, today, heading=True):
             f'{operator_html(t)}'
             f'<p class="venue-meta"><span class="hood">{escape(t["neighborhood"])}</span>'
             f'<span class="dist" hidden></span></p></header>'
-            f'<ul>{"".join(film_row(f, tmap) for f in films.values())}</ul></div>')
+            f'<ul>{"".join(film_row(f, tmap, blurbs) for f in films.values())}</ul></div>')
     head = (f'<div class="day-head"><h2>{day_label(day, today)}<span class="date">{day.strftime("%b %-d")}</span></h2>'
             f'<span class="count">{n} screening{"s" if n != 1 else ""}</span></div>') if heading else ""
     return f'<section class="day" id="d{day.isoformat()}">{head}{"".join(blocks)}</section>', n, special
@@ -619,7 +622,10 @@ def render_home(data, screenings, now):
 
     if today in days:
         # With picks between the page title and today's list, the list needs its own "Today" heading.
-        today_html, n, _ = day_section(today, days[today], tmap, today, heading=bool(week))
+        today_html, n, _ = day_section(today, days[today], tmap, today, heading=bool(week), blurbs=False)
+        # Shown by the script once every showing today has started.
+        today_html += ('<p class="note" id="done-today" hidden>Everything today has started. '
+                       '<a class="more" href="/listings/">See what&rsquo;s on tomorrow →</a></p>')
     else:
         n, nxt = 0, next(iter(days), None)
         today_html = '<p class="note">Nothing else on screen today.' + (
@@ -646,7 +652,7 @@ def render_home(data, screenings, now):
     return f"""
 <main><div class="wrap">
   <header class="page-head">
-    <p class="eyebrow">{today.strftime("%A, %B %-d")} · {n} screening{"s" if n != 1 else ""} at {venues} theater{"s" if venues != 1 else ""}</p>
+    <p class="eyebrow">{today.strftime("%A, %B %-d")} · <span id="today-count">{n} screening{"s" if n != 1 else ""} at {venues} theater{"s" if venues != 1 else ""}</span></p>
     <h1>Showing today in Los Angeles</h1>
     <form class="home-search" action="/listings/" role="search">
       <input class="search" type="search" name="q" placeholder="Search every listing: films, directors, guests, 35mm…" aria-label="Search every listing">
@@ -716,18 +722,7 @@ def render_listings(data, screenings, now):
     </details>
     <button class="chip" id="special" type="button" aria-pressed="false">Special events</button>
     <button class="chip" id="near" type="button" aria-pressed="false">Near me</button>
-    <button class="chip" id="watch" type="button" aria-pressed="false" aria-controls="watch-panel">Letterboxd watchlist</button>
     <input class="search" id="search" type="search" placeholder="Search films, directors, guests, 35mm…" aria-label="Search listings">
-  </div>
-  <div class="watch-panel" id="watch-panel" hidden>
-    <p id="watch-intro">See which films on your Letterboxd watchlist are playing. On Letterboxd, go to
-      Settings → Data → Export your data, unzip the download and choose <b>watchlist.csv</b>.
-      It stays in this browser; nothing is uploaded.</p>
-    <p id="watch-status" hidden></p>
-    <div class="watch-row">
-      <label class="chip file"><input type="file" id="watch-file" accept=".csv,text/csv"><span id="watch-choose">Choose watchlist.csv</span></label>
-      <button type="button" class="link-button" id="watch-forget" hidden>Forget my watchlist</button>
-    </div>
   </div>
   <p class="near-status" id="near-status" hidden></p>
   <div class="days">{"".join(nav)}<a class="later" href="/dates/"><span>Later</span>→</a></div>
@@ -749,21 +744,9 @@ LISTINGS_SCRIPT = """<script>
   const [theaterPicker, genrePicker] = pickers;
   const special = document.getElementById("special");
   const near = document.getElementById("near");
-  const watch = document.getElementById("watch");
   const search = document.getElementById("search");
   const pressed = b => b.getAttribute("aria-pressed") === "true";
   const press = (b, on) => { b.setAttribute("aria-pressed", on ? "true" : "false"); b.classList.toggle("on", on); };
-
-  // Letterboxd watchlist: a Set of normalized titles, each with the years it was listed under.
-  let watchlist = null;
-  const norm = t => t.normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
-    .replace(/&/g, "and").replace(/^(the|a|an) /, "").replace(/[^a-z0-9]/g, "");
-  const onWatchlist = f => {
-    if (!watchlist || !f.dataset.keys) return false;
-    const year = +f.dataset.year;
-    return f.dataset.keys.split("|").some(k => watchlist.has(k)
-      && (!year || watchlist.get(k).some(y => !y || Math.abs(y - year) <= 1)));
-  };
 
   function label(p) {
     const picked = p.boxes.filter(b => b.checked);
@@ -778,29 +761,26 @@ LISTINGS_SCRIPT = """<script>
   function apply() {
     const q = search.value.trim().toLowerCase();
     const chosen = label(theaterPicker), genres = label(genrePicker);
-    const onlySpecial = pressed(special), onlyWatch = pressed(watch);
-    let any = false, matched = new Set();
+    const onlySpecial = pressed(special);
+    let any = false;
     document.querySelectorAll(".day").forEach(day => {
       let dayVisible = false;
       day.querySelectorAll(".venue").forEach(v => {
         let venueVisible = false;
         v.querySelectorAll(".film").forEach(f => {
-          const listed = onWatchlist(f);
-          if (listed) matched.add(f.dataset.keys);
           const ok = (chosen.size === 0 || chosen.has(v.dataset.theater))
             && (genres.size === 0 || f.dataset.genres.split("|").some(g => genres.has(g)))
             && (!onlySpecial || f.dataset.special === "1")
-            && (!onlyWatch || listed)
             && (!q || f.dataset.search.includes(q));
           f.hidden = !ok;
-          venueVisible ||= ok;
+          venueVisible ||= ok && !f.classList.contains("past");  // "past": every showtime has started
         });
         v.hidden = !venueVisible;
         dayVisible ||= venueVisible;
       });
       day.hidden = !dayVisible;
       const n = [...day.querySelectorAll(".film")].filter(f => !f.hidden && !f.closest(".venue").hidden)
-        .reduce((sum, f) => sum + f.querySelectorAll(".time").length, 0);
+        .reduce((sum, f) => sum + f.querySelectorAll(".time:not(.past)").length, 0);
       const count = day.querySelector(".count");
       if (count) count.textContent = `${n} screening${n === 1 ? "" : "s"}`;
       const link = document.querySelector(`.days a[href="#${day.id}"]`);
@@ -808,14 +788,6 @@ LISTINGS_SCRIPT = """<script>
       any ||= dayVisible;
     });
     document.getElementById("no-results").hidden = any;
-    if (watchlist) {
-      watch.textContent = `My watchlist · ${matched.size}`;
-      const status = document.getElementById("watch-status");
-      status.hidden = false;
-      status.textContent = matched.size
-        ? `${matched.size} film${matched.size === 1 ? "" : "s"} from your watchlist (${watchlist.size} titles) ${matched.size === 1 ? "is" : "are"} playing.`
-        : `None of the ${watchlist.size} films on your watchlist are playing right now.`;
-    }
   }
 
   for (const p of pickers) {
@@ -834,6 +806,7 @@ LISTINGS_SCRIPT = """<script>
   document.addEventListener("keydown", e => { if (e.key === "Escape") pickers.forEach(p => { p.el.open = false; }); });
   special.addEventListener("click", () => { press(special, !pressed(special)); apply(); });
   search.addEventListener("input", apply);
+  document.addEventListener("started", apply);  // recount once showtimes drop off
 
   // Near me: sorts each day's theaters by distance. Asks for location only when tapped.
   const nearStatus = document.getElementById("near-status");
@@ -877,71 +850,7 @@ LISTINGS_SCRIPT = """<script>
     }, { maximumAge: 600000, timeout: 15000 });
   });
 
-  // Letterboxd watchlist
-  const panel = document.getElementById("watch-panel");
-  const store = { get: () => { try { return localStorage.getItem("watchlist"); } catch { return null; } },
-                  set: v => { try { v === null ? localStorage.removeItem("watchlist") : localStorage.setItem("watchlist", v); } catch {} } };
-  function parseCsv(text) {
-    const rows = [];
-    let row = [], cell = "", quoted = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (quoted) {
-        if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
-        else if (c === '"') quoted = false;
-        else cell += c;
-      } else if (c === '"') quoted = true;
-      else if (c === ",") { row.push(cell); cell = ""; }
-      else if (c === "\\n" || c === "\\r") {
-        if (c === "\\r" && text[i + 1] === "\\n") i++;
-        row.push(cell); rows.push(row); row = []; cell = "";
-      } else cell += c;
-    }
-    if (cell || row.length) { row.push(cell); rows.push(row); }
-    return rows;
-  }
-  function loadWatchlist(entries) {
-    watchlist = new Map();
-    for (const [name, year] of entries) {
-      const k = norm(name);
-      if (k) watchlist.set(k, [...(watchlist.get(k) || []), +year || 0]);
-    }
-    document.getElementById("watch-forget").hidden = false;
-    document.getElementById("watch-intro").hidden = true;
-    document.getElementById("watch-choose").textContent = "Choose another file";
-  }
-  document.getElementById("watch-file").addEventListener("change", async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const rows = parseCsv(await file.text());
-    const head = (rows.shift() || []).map(h => h.trim().toLowerCase());
-    const ni = head.indexOf("name"), yi = head.indexOf("year");
-    const status = document.getElementById("watch-status");
-    if (ni < 0) { status.hidden = false; status.textContent = "That doesn't look like a Letterboxd watchlist.csv (it has no Name column)."; return; }
-    const entries = rows.filter(r => r[ni]).map(r => [r[ni], r[yi]]);
-    store.set(JSON.stringify(entries));
-    loadWatchlist(entries);
-    press(watch, true);
-    apply();
-  });
-  document.getElementById("watch-forget").addEventListener("click", () => {
-    store.set(null);
-    watchlist = null;
-    press(watch, false);
-    watch.textContent = "Letterboxd watchlist";
-    document.getElementById("watch-status").hidden = true;
-    document.getElementById("watch-intro").hidden = false;
-    document.getElementById("watch-forget").hidden = true;
-    document.getElementById("watch-choose").textContent = "Choose watchlist.csv";
-    apply();
-  });
-  watch.addEventListener("click", () => {
-    if (!watchlist) { panel.hidden = !panel.hidden; return; }  // nothing loaded yet: show how to load one
-    press(watch, !pressed(watch));
-    panel.hidden = !pressed(watch);
-    apply();
-  });
-  try { const saved = JSON.parse(store.get()); if (Array.isArray(saved)) loadWatchlist(saved); } catch {}
+  try { localStorage.removeItem("watchlist"); } catch {}  // from the old Letterboxd watchlist filter
 
   // Back to top: appears once you've scrolled a couple of screens down.
   const toTop = document.getElementById("to-top");
@@ -998,6 +907,30 @@ COMMON_SCRIPT = """<script>
     try { await navigator.clipboard.writeText(b.dataset.url); flash(b, "Link copied"); }
     catch { prompt("Copy this link:", b.dataset.url); }
   });
+
+  // The site is built once a morning, so showtimes that have started are dropped here in the browser: in a day's
+  // list, a film whose showtimes have all started goes away, then a theater with nothing left, then the day.
+  // Elsewhere (a film's own page) started showtimes are only dimmed. Checked again every minute.
+  function dropStarted() {
+    const cutoff = Date.now() - 15 * 60000;  // still listed for the first 15 minutes, while trailers run
+    const left = (el, sel) => el.querySelector(sel + ":not(.past)");
+    document.querySelectorAll(".time[data-start]").forEach(t => t.classList.toggle("past", Date.parse(t.dataset.start) < cutoff));
+    document.querySelectorAll(".venue .film").forEach(f => f.classList.toggle("past", !left(f, ".time")));
+    document.querySelectorAll(".venue").forEach(v => v.classList.toggle("past", !left(v, ".film")));
+    document.querySelectorAll(".day").forEach(d => d.classList.toggle("past", !!d.querySelector(".venue") && !left(d, ".venue")));
+    const count = document.getElementById("today-count");
+    if (count) {
+      const today = document.querySelector("main .day");
+      const n = today ? today.querySelectorAll(".film:not(.past) .time:not(.past)").length : 0;
+      const v = today ? today.querySelectorAll(".venue:not(.past)").length : 0;
+      count.textContent = n ? `${n} screening${n === 1 ? "" : "s"} still to come at ${v} theater${v === 1 ? "" : "s"}` : "Nothing left today";
+      const done = document.getElementById("done-today");
+      if (done) done.hidden = n > 0;
+    }
+    document.dispatchEvent(new Event("started"));
+  }
+  dropStarted();
+  setInterval(dropStarted, 60000);
 </script>"""
 
 # Who to write to about a missing theater or a wrong listing, shown on the About page. Leave empty to hide.
@@ -1146,8 +1079,9 @@ def theater_ld(t):
             **({"parentOrganization": {"@type": "Organization", "name": t["operator"]}} if t.get("operator") else {})}
 
 
-def screening_ld(start, s, t, path):
-    """One showing as a ScreeningEvent. path is the page it's listed on; the event links to its row there."""
+def screening_ld(start, s, t, path, describe=True):
+    """One showing as a ScreeningEvent. path is the page it's listed on; the event links to its row there.
+    describe=False leaves out the blurb, for a film's later showtimes on the same page."""
     info = s.get("tmdb") or {}
     image = info.get("poster") or s.get("image")
     year = s["year"] or info.get("year")
@@ -1164,10 +1098,9 @@ def screening_ld(start, s, t, path):
         "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
         "location": {"@type": "MovieTheater", "@id": SITE_URL + theater_path(t) + "#theater", "name": t["name"],
                      "address": postal_address(t)},
-        "organizer": {"@type": "Organization", "name": t["name"], "url": t["url"]},
         "workPresented": movie,
         **({"image": image} if image else {}),
-        **({"description": clip(s["blurb"], 160)} if s.get("blurb") else {}),
+        **({"description": clip(s["blurb"], 160)} if describe and s.get("blurb") else {}),
         **({"videoFormat": s["format_tags"][0]} if s["format_tags"] else {}),
         "offers": {"@type": "Offer", "url": s["ticket_url"],
                    "availability": "https://schema.org/" + ("SoldOut" if s["sold_out"] else "InStock")},
@@ -1175,7 +1108,14 @@ def screening_ld(start, s, t, path):
 
 
 def events_ld(shows, tmap, path):
-    return [screening_ld(start, s, tmap[s["theater"]], path) for start, s in shows if has_page(tmap[s["theater"]])]
+    """Each film's blurb goes on its first showtime here only; the theater is the location, not repeated as organizer."""
+    out, described = [], set()
+    for start, s in shows:
+        if has_page(tmap[s["theater"]]):
+            film = (s["theater"], s["title"])
+            out.append(screening_ld(start, s, tmap[s["theater"]], path, describe=film not in described))
+            described.add(film)
+    return out
 
 
 def breadcrumbs(*crumbs):

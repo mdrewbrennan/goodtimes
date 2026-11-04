@@ -1,0 +1,38 @@
+{
+  "_how": [
+    "Hand-entered screenings for venues with no scrapeable schedule (e.g. the Palace, whose tickets are on AXS).",
+    "Add the venue once under theaters (id, name, neighborhood, address, url), and add its id with an area and map",
+    "coordinates to GEO in build.py. Then add each screening: theater (the venue id), title (the film, so posters match),",
+    "start as 'YYYY-MM-DD HH:MM' in Los Angeles time, and url (tickets). year, director, runtime, blurb and image are",
+    "optional. Mention a Q&A or 35mm in the blurb and the site tags it. Past screenings drop off by themselves, so old",
+    "entries can stay or be deleted. A malformed entry is skipped and named in the scrape log; the rest still list.",
+    "Only for venues no scraper covers: a screening for a theater not listed here is ignored."
+  ],
+  "theaters": [
+    {
+      "id": "palace",
+      "name": "Palace Theatre",
+      "neighborhood": "Downtown",
+      "address": "630 S Broadway",
+      "url": "https://www.axs.com/venues/102237/palace-theatre-los-angeles-tickets"
+    },
+    {
+      "id": "leroys",
+      "name": "Leroy's",
+      "neighborhood": "Chinatown",
+      "address": "422 Ord St",
+      "url": "https://www.instagram.com/leroys_happy_place/"
+    }
+  ],
+  "screenings": [
+    {
+      "theater": "palace",
+      "title": "Repo Man",
+      "start": "2026-12-11 20:00",
+      "url": "https://www.axs.com/events/1629159/circle-jerks-and-repo-man-tickets",
+      "year": 1984,
+      "director": "Alex Cox",
+      "blurb": "Circle Jerks x Repo Man: a full Circle Jerks set, then a Q&A with director Alex Cox, Zander Schloss, Dick Rude and Keith Morris, moderated by Jim Ruland, then a screening of the film."
+    }
+  ]
+}

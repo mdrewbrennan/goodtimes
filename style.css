@@ -49,6 +49,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .time:hover { border-color: var(--ink); }
 .time.sold-out { color: var(--faint); text-decoration: line-through; }
 .time.sold-out:hover { border-color: var(--rule); }
+/* Showtimes that have started (marked by the page script): gone from day lists, dimmed elsewhere. */
+.time.past { opacity: .4; }
+.venue .time.past, .film.past, .venue.past, .day.past { display: none; }
 .tags { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 500 11px/1.4 var(--sans); text-transform: uppercase; letter-spacing: .08em; }
 .tag { color: var(--green); }
 .tag.format { color: var(--muted); }
@@ -57,6 +60,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .note { color: var(--muted); margin: 0; padding-block: 12px; }
 
 .page-head { padding-block: 40px 4px; }
+.page-head + .day { margin-top: 8px; }  /* the homepage's today list, which has no heading of its own */
 .page-head h1 { margin: 6px 0 0; font: 600 clamp(32px, 5vw, 48px)/1.05 var(--sans); letter-spacing: -0.035em; text-wrap: balance; }
 
 /* Day and venue groups (homepage "today" and every listings day) */
@@ -96,7 +100,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .film { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; padding: 14px 0; }
-.film + .film { border-top: 1px dashed var(--rule); }
+/* A divider above every film after the first one still showing (earlier ones can be filtered out or started) */
+.film:not(.past, [hidden]) ~ .film { border-top: 1px dashed var(--rule); }
 .film-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .film h4 { margin: 0; font: 600 20px/1.25 var(--sans); letter-spacing: -0.015em; text-wrap: balance; }
 .film h4 a { text-decoration: none; }
@@ -187,13 +192,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .group-head { display: block; width: 100%; text-align: left; font: 500 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--green); background: none; border: 0; padding: 8px 10px 4px; cursor: pointer; }
 .group-head:hover { text-decoration: underline; text-underline-offset: 3px; }
 .venue-meta .dist { color: var(--ink); }
-.chip.file { display: inline-flex; align-items: center; cursor: pointer; }
-.chip.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.chip.file:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
-.watch-panel { font-size: 14px; color: var(--muted); max-width: 70ch; }
-.watch-panel p { margin: 0 0 8px; }
-.watch-panel #watch-status { color: var(--ink); }
-.watch-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .near-status { margin: 0; font-size: 14px; color: var(--muted); }
 
 /* Homepage search */
@@ -266,7 +264,11 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   .mast .wrap { flex-wrap: wrap; row-gap: 6px; }
   .brand { flex: 1 1 100%; }
   .logo-svg { flex: none; }
-  .site-nav { gap: 20px; }
+  /* One row of short links, so the first film shows on the first screen */
+  .site-nav { gap: 18px; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .site-nav a { font-size: 14px; }
+  .page-head { padding-top: 24px; }
+  .page-head h1 { font-size: 30px; }
   .film { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .film.has-poster { grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; }
   .film.has-poster .times { grid-column: 2; }
