@@ -36,7 +36,7 @@ NAME = "GOODTIMES"        # the wordmark
 SITE_NAME = "GOODTIMES LA"  # the name search engines, link previews and titles use
 TAGLINE = "To Live and Watch Movies in LA"
 # While friends test the site, ask search engines not to list it. Set to False at launch.
-PREVIEW = True
+PREVIEW = False
 # The public address, for canonical links, the sitemap and link previews. Netlify sets URL to the site's
 # primary domain during its builds; set SITE_URL to override it.
 SITE_URL = (os.environ.get("SITE_URL") or os.environ.get("URL") or "http://localhost:8765").rstrip("/")
