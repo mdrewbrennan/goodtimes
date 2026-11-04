@@ -226,6 +226,27 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .about-theaters .feed-url { display: none; }
 .feed-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
 
+/* Theater and collection pages */
+.intro { max-width: 68ch; margin-top: 14px; }
+.lede { margin: 0 0 8px; font: 500 18px/1.45 var(--sans); color: var(--ink); }
+.about-page { margin: 0 0 8px; color: var(--muted); }
+.about-page a, .theater-facts a { color: var(--green); }
+.theater-facts { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+.solo-list { list-style: none; margin: 0; padding: 0; }
+.solo-list .film:first-child { padding-top: 14px; }
+.area-head { margin: 36px 0 0; padding-bottom: 8px; border-bottom: 1.5px solid var(--ink); font: 600 22px/1.2 var(--sans); letter-spacing: -0.02em; }
+.area-head a { text-decoration: none; }
+.area-head a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.theater-list { list-style: none; margin: 0; padding: 0; }
+.theater-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.theater-list li > a { font-weight: 600; color: var(--green); text-decoration: none; }
+.theater-list li > a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.theater-list .hood { font-size: 13px; }
+.theater-list .count { margin-left: auto; font-size: 13px; color: var(--muted); }
+footer .browse { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px 16px; padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--rule); }
+footer .browse a { color: var(--green); text-decoration: none; font-size: 13px; }
+footer .browse a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
 .listings { padding-block: 0 80px; }
 .to-top { position: fixed; z-index: 15; right: max(20px, calc(env(safe-area-inset-right, 0px) + 12px)); bottom: max(84px, calc(env(safe-area-inset-bottom, 0px) + 76px)); font: 500 14px var(--sans); color: var(--green); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .08); }
 .to-top:hover { border-color: var(--ink); }

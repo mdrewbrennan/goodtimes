@@ -312,7 +312,11 @@ def site_graph():
 
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
-NAV = (("home", "/", "Today&rsquo;s Showings"), ("listings", "/listings/", "All Listings"), ("about", "/about/", "About"))
+NAV = (("home", "/", "Today&rsquo;s Showings"), ("weekend", "/this-weekend/", "This Weekend"),
+       ("listings", "/listings/", "All Listings"), ("about", "/about/", "About"))
+# Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
+BROWSE = (("/this-weekend/", "This weekend"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
+          ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"))
 USES_TMDB = False  # set in main() when any film has TMDB data, which means the footer must credit TMDB
 
 
@@ -370,6 +374,8 @@ def page(title, description, path, active, body, updated, script="", head="", in
 </div></header>
 {body}
 <footer><div class="wrap">
+  <nav class="browse" aria-label="Browse">{"".join(f'<a href="{h}">{label}</a>' for h, label in BROWSE)}{"".join(
+      f'<a href="/{area_slug(a)}/">{AREA_TITLES.get(a, a)}</a>' for a in AREAS if a in AREA_PAGES)}</nav>
   <span><b>{NAME}</b> · Every indie and one-off film showings in L.A.</span>
   <span>Updated {updated}. Tickets are sold by each theater.</span>
   {TMDB_CREDIT if USES_TMDB else ""}
@@ -452,6 +458,11 @@ def film_row(f, tmap):
             f'<div class="times">{times_html(f["times"])}</div></li>')
 
 
+def venue_link(t):
+    """A theater's name, linked to its page on this site (or to its own site when it has no page here)."""
+    return f'<a href="{theater_path(t)}">{escape(t["name"])}</a>' if has_page(t) else link(t["url"], escape(t["name"]))
+
+
 def operator_html(t):
     """The company that runs a theater (Landmark, American Cinematheque), as a small line under its name."""
     return f'<p class="venue-op">{escape(t["operator"])}</p>' if t.get("operator") else ""
@@ -470,7 +481,7 @@ def day_section(day, venues, tmap, today, heading=True):
         coords = f' data-lat="{geo[1]}" data-lng="{geo[2]}"' if geo else ""
         blocks.append(
             f'<div class="venue" data-theater="{tid}"{coords}>'
-            f'<header class="venue-head"><h3 class="venue-name">{link(t["url"], escape(t["name"]))}</h3>'
+            f'<header class="venue-head"><h3 class="venue-name">{venue_link(t)}</h3>'
             f'{operator_html(t)}'
             f'<p class="venue-meta"><span class="hood">{escape(t["neighborhood"])}</span>'
             f'<span class="dist" hidden></span></p></header>'
@@ -1073,6 +1084,300 @@ def render_festival(name, screenings, tmap, today):
 </div></main>"""
 
 
+# ---------- theater and collection pages ----------
+# Pages for what people search for: one theater's schedule, this weekend, 35mm, Q&As, an area of town. Every
+# screening on them is also described as a schema.org ScreeningEvent, so search engines and AI answer engines
+# can read the film, time, place and ticket link as facts instead of guessing from the text.
+
+THEATER_DAYS = 30     # how far ahead a theater's page lists
+AREA_DAYS = 7
+COLLECTION_DAYS = 60
+# A sentence or two about a theater in your own words, shown at the top of its page. Keyed by theater id.
+THEATER_NOTES = {}
+
+
+def has_page(t):
+    """Theaters with an address of their own get a page (not a series that screens at other venues)."""
+    return bool(t.get("address")) and not t["address"].lower().startswith("various")
+
+
+def theater_path(t):
+    return f"/theaters/{slug(t['name'])}/"
+
+
+def city(t):
+    return t["neighborhood"] if t["neighborhood"] in CITIES else "Los Angeles"
+
+
+def postal_address(t):
+    return {"@type": "PostalAddress", "streetAddress": t["address"], "addressLocality": city(t),
+            "addressRegion": "CA", "addressCountry": "US"}
+
+
+def theater_ld(t):
+    geo = GEO.get(t["id"])
+    return {"@type": "MovieTheater", "@id": SITE_URL + theater_path(t) + "#theater", "name": t["name"],
+            "url": SITE_URL + theater_path(t), "sameAs": [t["url"]], "address": postal_address(t),
+            **({"geo": {"@type": "GeoCoordinates", "latitude": geo[1], "longitude": geo[2]}} if geo else {}),
+            **({"parentOrganization": {"@type": "Organization", "name": t["operator"]}} if t.get("operator") else {})}
+
+
+def screening_ld(start, s, t, path):
+    """One showing as a ScreeningEvent. path is the page it's listed on; the event links to its row there."""
+    info = s.get("tmdb") or {}
+    image = info.get("poster") or s.get("image")
+    year = s["year"] or info.get("year")
+    movie = {"@type": "Movie", "name": info.get("title") or s["title"],
+             **({"dateCreated": str(year)} if year else {}),
+             **({"director": {"@type": "Person", "name": s["director"]}} if s["director"] else {}),
+             **({"image": image} if image else {}), **({"sameAs": info["url"]} if info.get("url") else {})}
+    row = short_id(s["theater"], s["title"], start.date().isoformat())  # the film row's id, as in event_id()
+    return {
+        "@type": "ScreeningEvent", "name": s["title"], "url": f"{SITE_URL}{path}#f-{row}",
+        "startDate": start.isoformat(),
+        **({"endDate": (start + timedelta(minutes=s["runtime"])).isoformat()} if s["runtime"] else {}),
+        "eventStatus": "https://schema.org/EventScheduled",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "location": {"@type": "MovieTheater", "@id": SITE_URL + theater_path(t) + "#theater", "name": t["name"],
+                     "address": postal_address(t)},
+        "organizer": {"@type": "Organization", "name": t["name"], "url": t["url"]},
+        "workPresented": movie,
+        **({"image": image} if image else {}),
+        **({"description": s["blurb"][:300]} if s.get("blurb") else {}),
+        **({"videoFormat": s["format_tags"][0]} if s["format_tags"] else {}),
+        "offers": {"@type": "Offer", "url": s["ticket_url"],
+                   "availability": "https://schema.org/" + ("SoldOut" if s["sold_out"] else "InStock")},
+    }
+
+
+def events_ld(shows, tmap, path):
+    return [screening_ld(start, s, tmap[s["theater"]], path) for start, s in shows if has_page(tmap[s["theater"]])]
+
+
+def breadcrumbs(*crumbs):
+    return {"@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": i, "name": name, "item": SITE_URL + path}
+        for i, (name, path) in enumerate((("Home", "/"),) + crumbs, 1)]}
+
+
+def schedule_html(shows, tmap, today, solo=False):
+    """Day-by-day sections. solo: one theater's page, so its name isn't repeated beside every film."""
+    days = by_day(shows, theater_order(tmap.values()))
+    if not solo:
+        return "".join(day_section(day, venues, tmap, today)[0] for day, venues in days.items())
+    out = []
+    for day, venues in days.items():
+        films = [f for fs in venues.values() for f in fs.values()]
+        n = sum(len(f["times"]) for f in films)
+        out.append(f'<section class="day" id="d{day.isoformat()}"><div class="day-head"><h2>{day_label(day, today)}'
+                   f'<span class="date">{day.strftime("%b %-d")}</span></h2>'
+                   f'<span class="count">{n} screening{"s" if n != 1 else ""}</span></div>'
+                   f'<ul class="solo-list">{"".join(film_row(f, tmap) for f in films)}</ul></section>')
+    return "".join(out)
+
+
+def plural(n, word, many=None):
+    return f'{n} {word if n == 1 else many or word + "s"}'
+
+
+def next_up(shows, tmap, today, at=True):
+    """ "Next: Title at Theater, tonight at 7:30pm." The first showing, said the way a person would."""
+    start, s = shows[0]
+    day = start.date()
+    when = ("tonight" if start.hour >= 17 else "today") if day == today else (
+        "tomorrow" if day == today + timedelta(days=1) else start.strftime("%A, %B %-d"))
+    where = f' at {escape(tmap[s["theater"]]["name"])}' if at else ""
+    return f'Next: <i>{escape(s["title"])}</i>{where}, {when} at {fmt_time(start)}.'
+
+
+def lede(shows, tmap, today, counted, at=True):
+    """The page's answer in one or two sentences: how many, where, and what's next."""
+    if not shows:
+        return ""
+    return f'<p class="lede">{counted} {next_up(shows, tmap, today, at)}</p>'
+
+
+def weekend(today):
+    """This Friday to Sunday; on a weekend day, from today to Sunday."""
+    wd = today.weekday()
+    start = today if wd >= 4 else today + timedelta(days=4 - wd)
+    return start, today + timedelta(days=6 - wd) if wd >= 4 else start + timedelta(days=2)
+
+
+def is_double(s):
+    return ("Double feature" in s["event_tags"] or " / " in s["title"] or " + " in s["title"]
+            or bool(re.search(r"double (feature|bill)", f'{s["title"]} {s.get("blurb") or ""}', re.I)))
+
+
+# path, page title, eyebrow, heading, what the count is of (one, many), an evergreen sentence, which screenings
+COLLECTIONS = [
+    ("35mm", "35mm Film Screenings in Los Angeles", "Shown on film", "35mm screenings in LA", ("screening on 35mm", "screenings on 35mm"),
+     "Showings the theater itself lists as a 35mm print, across every LA indie and repertory theater "
+     f"{NAME} follows.", lambda s: "35mm" in s["format_tags"]),
+    ("70mm", "70mm Film Screenings in Los Angeles", "Shown on film", "70mm screenings in LA", ("screening in 70mm", "screenings in 70mm"),
+     "Large-format 70mm prints, which only a few LA projection booths can run.",
+     lambda s: "70mm" in s["format_tags"]),
+    ("q-and-a", "Film Q&As and Filmmakers in Person in LA", "Guests in person", "Q&As and guests in person in LA",
+     ("screening with a guest in person", "screenings with a guest in person"),
+     "Screenings where a director, actor or other guest is scheduled to appear, usually for a Q&A or an introduction. "
+     "Guests are named when the theater says who's coming; plans change, so check the theater's page before you go.",
+     lambda s: "Guests in person" in s["event_tags"]),
+    ("double-features", "Double Features in Los Angeles", "Two films, one bill", "Double features in LA",
+     ("double bill", "double bills"), "Two films programmed together on one bill at LA's repertory theaters.", is_double),
+]
+AREA_TITLES = {"Downtown": "Downtown LA"}
+AREA_IN = {"Eastside": "on the Eastside", "Westside": "on the Westside"}  # otherwise "in <area>"
+
+
+def collection_page(heading, eyebrow, shows, tmap, today, counted, about, empty, solo=False, extra=""):
+    lead = lede(shows, tmap, today, counted, at=not solo)
+    body = schedule_html(shows, tmap, today, solo) or f'<p class="note">{empty}</p>'
+    return f"""
+<main><div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">{eyebrow}</p>
+    <h1>{heading}</h1>
+  </header>
+  <section class="intro">{lead}<p class="about-page">{about}</p>{extra}</section>
+  {body}
+  <p class="upcoming-foot"><a class="more" href="/listings/">Everything playing in LA →</a></p>
+</div></main>"""
+
+
+def render_theater(t, shows, tmap, today):
+    n, fmt = len(shows), sum(1 for _, s in shows if "35mm" in s["format_tags"] or "70mm" in s["format_tags"])
+    special = sum(1 for _, s in shows if s["is_special"])
+    extras = [f"{fmt} on film" if fmt else "", plural(special, "special event") if special else ""]
+    extras = " and ".join(x for x in extras if x)
+    counted = (f'{plural(n, "screening")} at {escape(t["name"])} in the next {THEATER_DAYS} days'
+               f'{", including " + extras if extras else ""}.')
+    maps = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote(location(t))
+    facts = (f'<p class="theater-facts">{escape(t["address"])}, {escape(city(t))}, CA · '
+             f'<a href="{escape(maps)}" target="_blank" rel="noopener">Map</a> · '
+             f'{link(t["url"], "Theater website")} · <a href="/cal/{t["id"]}.ics">Calendar feed</a></p>')
+    note = f'<p>{escape(THEATER_NOTES[t["id"]])}</p>' if t["id"] in THEATER_NOTES else ""
+    eyebrow = " · ".join(escape(x) for x in (t.get("operator"), t["neighborhood"], area(t)) if x)
+    return collection_page(escape(t["name"]), eyebrow, shows, tmap, today, counted,
+                           f'Showtimes for {escape(t["name"])}, gathered every morning from the theater&rsquo;s own '
+                           f'site. Tickets are sold by the theater.', f'Nothing listed at {escape(t["name"])} in the '
+                           f'next {THEATER_DAYS} days. Check the theater&rsquo;s own site for later dates.',
+                           solo=True, extra=note + facts)
+
+
+def render_theater_index(theaters, shows, today):
+    week = today + timedelta(days=AREA_DAYS)
+    counts = {}
+    for start, s in shows:
+        if start.date() < week:
+            counts[s["theater"]] = counts.get(s["theater"], 0) + 1
+    groups = OrderedDict()
+    for t in theater_order(theaters):
+        if has_page(t):
+            groups.setdefault(area(t), []).append(t)
+    rows = "".join(
+        f'<h2 class="area-head">{area_link(a)}</h2><ul class="theater-list">' + "".join(
+            f'<li><a href="{theater_path(t)}">{escape(t["name"])}</a>'
+            f'<span class="hood">{escape(" · ".join(x for x in (t.get("operator"), t["neighborhood"]) if x))}</span>'
+            f'<span class="count">{plural(counts.get(t["id"], 0), "screening")} this week</span></li>' for t in ts)
+        + "</ul>" for a, ts in groups.items())
+    return f"""
+<main><div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">{plural(sum(len(ts) for ts in groups.values()), "theater")}</p>
+    <h1>LA&rsquo;s indie and repertory movie theaters</h1>
+  </header>
+  <section class="intro"><p class="about-page">Every theater {NAME} lists, by area of town, with what each has on
+    over the next week. Each page has the full schedule, the address and a calendar feed.</p></section>
+  {rows}
+</div></main>"""
+
+
+def area_slug(a):
+    return slug(a)
+
+
+def area_link(a):
+    """An area's name, linked to its page when it has one."""
+    return f'<a href="/{area_slug(a)}/">{escape(a)}</a>' if a in AREA_PAGES else escape(a)
+
+
+AREA_PAGES = set()  # areas with two or more theaters; filled in by main()
+
+
+def collection_pages(data, screenings, tmap, today, updated):
+    """{path: html} for the theater, area and collection pages."""
+    pages = {}
+    soon = lambda days: [x for x in screenings if x[0].date() < today + timedelta(days=days)]
+    theaters = [t for t in data["theaters"] if has_page(t)]
+
+    for t in theaters:
+        shows = [x for x in soon(THEATER_DAYS) if x[1]["theater"] == t["id"]]
+        path = theater_path(t)
+        hood = f'{t["neighborhood"]}, {city(t)}' if city(t) != t["neighborhood"] else t["neighborhood"]
+        desc = (f'What\'s playing at {t["name"]} ({t["address"]}, {hood}): {plural(len(shows), "upcoming screening")}'
+                f', with showtimes and tickets. Updated every morning.')
+        graph = [theater_ld(t), breadcrumbs(("Theaters", "/theaters/"), (t["name"], path))] + events_ld(shows, tmap, path)
+        pages[path] = page(f'{t["name"]} Showtimes & Schedule | {SITE_NAME}', desc, path, None,
+                           render_theater(t, shows, tmap, today), updated, head=json_ld({"@graph": graph}))
+
+    graph = [breadcrumbs(("Theaters", "/theaters/")),
+             {"@type": "ItemList", "itemListElement": [
+                 {"@type": "ListItem", "position": i, "item": theater_ld(t)} for i, t in enumerate(theater_order(theaters), 1)]}]
+    pages["/theaters/"] = page(f"LA Indie & Repertory Movie Theaters | {SITE_NAME}",
+                               f"All {len(theaters)} Los Angeles indie and repertory movie theaters {NAME} lists, by "
+                               "area, with addresses, schedules and calendar feeds.", "/theaters/", None,
+                               render_theater_index(theaters, screenings, today), updated, head=json_ld({"@graph": graph}))
+
+    # This weekend
+    fri, sun = weekend(today)
+    shows = [x for x in screenings if fri <= x[0].date() <= sun]
+    dates = f'{fri.strftime("%b %-d")}–{sun.strftime("%-d") if fri.month == sun.month else sun.strftime("%b %-d")}'
+    k = len({s["theater"] for _, s in shows})
+    special = sum(1 for _, s in shows if s["is_special"])
+    counted = (f'{plural(len(shows), "screening")} at {k} LA indie and repertory theater{"" if k == 1 else "s"} this weekend, '
+               f'{fri.strftime("%A, %B %-d")} to {sun.strftime("%A, %B %-d")}'
+               f'{", including " + plural(special, "special event") if special else ""}.')
+    path = "/this-weekend/"
+    pages[path] = page(f"LA Movies This Weekend, {dates}: Indie & Repertory Screenings | {SITE_NAME}",
+                       re.sub(r"<[^>]+>", "", counted) + " Times and tickets for every one.", path, "weekend",
+                       collection_page(f"This weekend in LA", dates, shows, tmap, today, counted,
+                                       "Everything playing Friday through Sunday at the theaters "
+                                       f'{NAME} follows. <a href="/q-and-a/">Q&amp;As</a>, '
+                                       '<a href="/35mm/">35mm</a> and other special screenings are tagged.',
+                                       "Nothing is listed for this weekend yet."),
+                       updated, head=json_ld({"@graph": [breadcrumbs(("This weekend", path))] + events_ld(shows, tmap, path)}))
+
+    for key, title, eyebrow, heading, what, about, test in COLLECTIONS:
+        shows = [x for x in soon(COLLECTION_DAYS) if test(x[1])]
+        k = len({s["theater"] for _, s in shows})
+        counted = (f'{plural(len(shows), *what)} coming up at {plural(k, "LA theater")} over the next two months.'
+                   if shows else "")
+        path = f"/{key}/"
+        desc = (f'{plural(len(shows), *what)} at {plural(k, "Los Angeles theater")}, with dates, times and tickets. '
+                'Updated every morning.') if shows else f"{about[:150]}"
+        pages[path] = page(f"{title} | {SITE_NAME}", desc, path, None,
+                           collection_page(heading, eyebrow, shows, tmap, today, counted, about,
+                                           f"Nothing is listed right now. New screenings are added every morning."),
+                           updated, head=json_ld({"@graph": [breadcrumbs((heading, path))] + events_ld(shows, tmap, path)}))
+
+    for a in AREA_PAGES:
+        ids = {t["id"] for t in theaters if area(t) == a}
+        names = [t["name"] for t in theater_order(theaters) if t["id"] in ids]
+        shows = [x for x in soon(AREA_DAYS) if x[1]["theater"] in ids]
+        label = AREA_TITLES.get(a, a)
+        counted = (f'{plural(len(shows), "screening")} at {plural(len(ids), "theater")} '
+                   f'{escape(AREA_IN.get(a, "in " + label))} this week.')
+        path = f"/{area_slug(a)}/"
+        about = f'Indie and repertory showtimes for the next {AREA_DAYS} days at ' + ", ".join(
+            f'<a href="{theater_path(t)}">{escape(t["name"])}</a>' for t in theater_order(theaters) if t["id"] in ids) + "."
+        pages[path] = page(f"{label} Movie Theaters: Indie & Repertory Showtimes This Week | {SITE_NAME}",
+                           f'{plural(len(shows), "screening")} this week at {", ".join(names)}'[:155], path, None,
+                           collection_page(f"Showing in {escape(label)}", "This week", shows, tmap, today, counted,
+                                           about, "Nothing listed in this area this week."),
+                           updated, head=json_ld({"@graph": [breadcrumbs((label, path))] + events_ld(shows, tmap, path)}))
+    return pages
+
+
 def render_about(data):
     groups = OrderedDict()
     for t in theater_order(data["theaters"]):
@@ -1186,6 +1491,8 @@ def main():
     screenings = upcoming(data, now)
     USES_TMDB = any(s.get("tmdb") for _, s in screenings)
     tmap = {t["id"]: t for t in data["theaters"]}
+    places = [area(t) for t in data["theaters"] if has_page(t)]
+    AREA_PAGES.update(a for a in AREAS if places.count(a) >= 2)
     scraped = datetime.fromisoformat(data["scraped_at"])
     updated = scraped.astimezone(LA).strftime("%b %-d, %-I:%M%p").lower().capitalize()
 
@@ -1203,8 +1510,10 @@ def main():
     stamp = ics_utc(scraped)
 
     home_body = render_home(data, screenings, now)
+    graph = site_graph()
+    graph["@graph"] += events_ld([x for x in screenings if x[0].date() == today], tmap, "/")
     home = page(f"LA Indie & Repertory Movie Showtimes Today | {SITE_NAME}", home_description, "/", "home",
-                home_body, updated, head=json_ld(site_graph()))
+                home_body, updated, head=json_ld(graph))
     listings = page(f"All Upcoming Indie & Repertory Screenings in LA | {SITE_NAME}", listings_description,
                     "/listings/", "listings", render_listings(data, screenings, now), updated, LISTINGS_SCRIPT)
     not_found = page(f"Page not found | {SITE_NAME}", DEFAULT_DESCRIPTION, "/404.html", None, NOT_FOUND, updated,
@@ -1247,6 +1556,10 @@ def main():
             f"{name} in Los Angeles | {SITE_NAME}", f"Every {name} screening listed at LA theaters, with times and tickets.",
             f"/festivals/{slug(name)}/", None, render_festival(name, shows, tmap, today), updated)
 
+    collections = collection_pages(data, screenings, tmap, today, updated)
+    for path, html in collections.items():
+        generated[path.strip("/") + "/index.html"] = html
+
     files = {
         "index.html": home,
         "listings/index.html": listings,
@@ -1254,7 +1567,9 @@ def main():
         "picks/index.html": picks,
         "404.html": not_found,
         "robots.txt": robots_txt(),
-        "sitemap.xml": sitemap(["/", "/listings/", "/about/"] + (["/picks/"] if week else []) + [f"/festivals/{slug(n)}/" for n in festivals],
+        "sitemap.xml": sitemap(["/", "/listings/", "/this-weekend/", "/theaters/", "/about/"] + (["/picks/"] if week else [])
+                               + [p for p in collections if p not in ("/this-weekend/", "/theaters/")]
+                               + [f"/festivals/{slug(n)}/" for n in festivals],
                                scraped.isoformat(timespec="seconds")),
         "site.webmanifest": manifest(),
         "_redirects": redirects(),
@@ -1275,7 +1590,7 @@ def main():
     ico = favicon_ico((ROOT / "logo" / "favicon-48.png").read_bytes())
     for out in (SITE, NETLIFY):
         (out / "listings.html").unlink(missing_ok=True)  # replaced by listings/index.html
-        for folder in ("e", "cal", "festivals"):
+        for folder in ["e", "cal", "festivals", "theaters"] + [p.strip("/") for p in collections]:
             shutil.rmtree(out / folder, ignore_errors=True)
         for name, text in {**files, **generated}.items():
             (out / name).parent.mkdir(parents=True, exist_ok=True)
