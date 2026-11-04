@@ -686,12 +686,10 @@ def render_home(data, screenings, now):
     <p class="upcoming-foot"><a class="more" href="/diy/">See every DIY screening →</a></p>
   </section>""" if diy_rows else "")
 
-    venues = sum(1 for v in days.get(today, {}).values() if v)
     return f"""
 <main><div class="wrap">
   <header class="page-head">
-    <p class="eyebrow">{today.strftime("%A, %B %-d")} · <span id="today-count">{n} screening{"s" if n != 1 else ""} at {venues} theater{"s" if venues != 1 else ""}</span></p>
-    <h1>Showing today in Los Angeles</h1>
+    <h1>Showings for {today.strftime("%A, %B %-d")}</h1>
     <form class="home-search" action="/listings/" role="search">
       <input class="search" type="search" name="q" placeholder="Search every listing: films, directors, guests, 35mm…" aria-label="Search every listing">
       <button class="chip" type="submit">Search</button>
@@ -962,13 +960,12 @@ COMMON_SCRIPT = """<script>
     document.querySelectorAll(".venue .film").forEach(f => f.classList.toggle("past", !left(f, ".time")));
     document.querySelectorAll(".venue").forEach(v => v.classList.toggle("past", !left(v, ".film")));
     document.querySelectorAll(".day").forEach(d => d.classList.toggle("past", !!d.querySelector(".venue") && !left(d, ".venue")));
-    const count = document.getElementById("today-count");
-    if (count) {
+    const count = document.getElementById("today-count"), done = document.getElementById("done-today");
+    if (count || done) {
       const today = document.querySelector("main .day");
       const n = today ? today.querySelectorAll(".film:not(.past) .time:not(.past)").length : 0;
       const v = today ? today.querySelectorAll(".venue:not(.past)").length : 0;
-      count.textContent = n ? `${n} screening${n === 1 ? "" : "s"} still to come at ${v} theater${v === 1 ? "" : "s"}` : "Nothing left today";
-      const done = document.getElementById("done-today");
+      if (count) count.textContent = n ? `${n} screening${n === 1 ? "" : "s"} still to come at ${v} theater${v === 1 ? "" : "s"}` : "Nothing left today";
       if (done) done.hidden = n > 0;
     }
     document.dispatchEvent(new Event("started"));

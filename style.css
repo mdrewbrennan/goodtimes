@@ -33,7 +33,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* Masthead */
 .mast { border-bottom: 1px solid var(--rule); }
-.mast .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding-block: 16px; }
+.mast .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding-block: 10px; }
 .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .tagline { margin: 0; padding-left: 16px; border-left: 1px solid var(--rule); font: 500 15px/1.3 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
 .logo { display: flex; align-items: center; min-height: 52px; text-decoration: none; min-width: 0; }
@@ -44,10 +44,29 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .site-nav a { font: 500 15px var(--sans); text-decoration: none; color: var(--muted); padding-block: 6px; white-space: nowrap; }  /* labels never break mid-way */
 .site-nav a:hover { color: var(--ink); }
 .site-nav a[aria-current="page"] { color: var(--green); }
-/* The DIY tab wears the DIY stamp: dashed, slightly crooked, green text. */
-.site-nav .nav-diy { color: var(--green); padding: 3px 9px; border: 1.5px dashed var(--green); border-radius: 3px; transform: rotate(-2deg); align-self: center; }
-.site-nav .nav-diy:hover { color: var(--green); border-style: solid; }
-.site-nav .nav-diy[aria-current="page"] { border-style: solid; }
+/* The DIY tab is a little marquee: slightly crooked, ringed by dots that chase around it, and it flickers now and then. */
+.site-nav .nav-diy, .site-nav .nav-diy:hover, .site-nav .nav-diy[aria-current="page"] {
+  --bulb: var(--green); color: var(--green); padding: 6px 13px; border-radius: 2px; transform: rotate(-2deg); align-self: center;
+  background:
+    radial-gradient(circle, var(--bulb) 1.1px, transparent 1.7px) 0 0 / 7px 4px repeat-x,
+    radial-gradient(circle, var(--bulb) 1.1px, transparent 1.7px) 0 100% / 7px 4px repeat-x,
+    radial-gradient(circle, var(--bulb) 1.1px, transparent 1.7px) 0 0 / 4px 7px repeat-y,
+    radial-gradient(circle, var(--bulb) 1.1px, transparent 1.7px) 100% 0 / 4px 7px repeat-y; }
+@media (prefers-reduced-motion: no-preference) {
+  .site-nav .nav-diy { animation: diy-chase .9s linear infinite, diy-flicker 6s linear infinite; }
+  .site-nav .nav-diy:hover { animation-duration: .35s, 6s; }
+}
+/* Top runs right, right runs down, bottom runs left, left runs up: the dots circle the label. */
+@keyframes diy-chase {
+  from { background-position: 0 0, 0 100%, 0 0, 100% 0; }
+  to   { background-position: 7px 0, -7px 100%, 0 -7px, 100% 7px; }
+}
+@keyframes diy-flicker {
+  0%, 31%, 32.4%, 34%, 77%, 78.2%, 100% { opacity: 1; }
+  31.6% { opacity: .35; }
+  33.2% { opacity: .6; }
+  77.6% { opacity: .45; }
+}
 /* On /diy/ every venue is DIY, so the stamp and dashed rules would only repeat; the page uses the plain look. */
 .diy-page .diy-stamp { display: none; }
 .diy-page .venue.diy { border-bottom-style: solid; }
@@ -68,7 +87,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .more:hover { text-decoration: underline; text-underline-offset: 3px; }
 .note { color: var(--muted); margin: 0; padding-block: 12px; }
 
-.page-head { padding-block: 40px 4px; }
+.page-head { padding-block: 22px 4px; }
 .page-head + .day { margin-top: 8px; }  /* the homepage's today list, which has no heading of its own */
 .page-head h1 { margin: 6px 0 0; font: 600 clamp(32px, 5vw, 48px)/1.05 var(--sans); letter-spacing: -0.035em; text-wrap: balance; }
 
@@ -286,7 +305,7 @@ footer .wrap { padding-block: 24px 48px; display: flex; flex-wrap: wrap; justify
 footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter-spacing: -0.01em; }
 
 @media (max-width: 640px) {
-  .mast .wrap { padding-block: 12px; }
+  .mast .wrap { padding-block: 8px; }
   .logo { min-width: 0; }
   .brand { gap: 12px; }
   .logo-svg { height: 44px; }
@@ -295,7 +314,7 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   .brand { flex: 1 1 100%; }
   .logo-svg { flex: none; }
   .site-nav { gap: 0 18px; justify-content: flex-start; }
-  .page-head { padding-top: 24px; }
+  .page-head { padding-top: 16px; }
   .page-head h1 { font-size: 30px; }
   .film { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .film.has-poster { grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; }
