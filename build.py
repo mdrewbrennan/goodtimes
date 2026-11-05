@@ -671,23 +671,24 @@ def render_home(data, screenings, now):
     for start, x in screenings:
         if x["is_diy"]:
             diy_films.setdefault((x["theater"], x["title"], start.date()), {**x, "times": []})["times"].append((start, x))
+    # The DIY column: a narrow newspaper-style rail beside the listings (a swipeable strip on a phone).
     diy_rows = "".join(
         f'<li><a href="{escape(ev["film_url"] or ev["ticket_url"])}" target="_blank" rel="noopener">'
-        f'<span class="when">{short_day(ev["times"][0][0].date(), today)}'
-        f'<b>{ev["times"][0][0].strftime("%b %-d")}</b>{fmt_time(ev["times"][0][0])}</span>'
-        f'<div>{tags_html(ev, links=False)}<h3>{escape(ev["title"])}</h3></div>'
-        f'<span class="where">{escape(tmap[ev["theater"]]["name"])}<br>{escape(tmap[ev["theater"]]["neighborhood"])}</span></a></li>'
-        for ev in list(diy_films.values())[:8])
+        f'<span class="when">{short_day(ev["times"][0][0].date(), today)} {ev["times"][0][0].strftime("%b %-d")} · '
+        f'{fmt_time(ev["times"][0][0])}</span>'
+        f'<span class="what">{escape(ev["title"])}</span>'
+        f'<span class="where">{escape(tmap[ev["theater"]]["name"])}, {escape(tmap[ev["theater"]]["neighborhood"])}</span></a></li>'
+        for ev in list(diy_films.values())[:7])
     diy_html = (f"""
-  <section class="diy-block">
-    <div class="day-head"><h2>DIY &amp; micro-cinemas</h2><span class="diy-stamp">Underground LA</span></div>
-    <p class="diy-intro">Artist-run rooms, storefront screens and pop-up series. Small rooms, few seats, often one night only.</p>
-    <ul class="diy-list">{diy_rows}</ul>
-    <p class="upcoming-foot"><a class="more" href="/diy/">See every DIY screening →</a></p>
-  </section>""" if diy_rows else "")
+  <aside class="diy-rail" aria-label="Underground and DIY screenings">
+    <p class="diy-stamp">Underground &amp; DIY</p>
+    <h2>Off the multiplex map</h2>
+    <ul>{diy_rows}</ul>
+    <a class="more" href="/diy/">Every DIY screening →</a>
+  </aside>""" if diy_rows else "")
 
     return f"""
-<main><div class="wrap">
+<main><div class="wrap home-grid{" has-rail" if diy_html else ""}">
   <header class="page-head">
     <h1>Showings for {today.strftime("%A, %B %-d")}</h1>
     <form class="home-search" action="/listings/" role="search">
@@ -695,14 +696,16 @@ def render_home(data, screenings, now):
       <button class="chip" type="submit">Search</button>
     </form>
   </header>
+  {diy_html}
+  <div class="home-main">
   {picks_html}
   {today_html}
-  {diy_html}
   <section class="upcoming">
     <div class="day-head"><h2>Upcoming special events</h2></div>
     <ul class="upcoming-list">{rows or '<li class="note">No special events posted right now.</li>'}</ul>
     <p class="upcoming-foot"><a class="more" href="/special-events/">See every special event →</a></p>
   </section>
+  </div>
 </div></main>"""
 
 

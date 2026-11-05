@@ -400,3 +400,33 @@ footer .browse { border-bottom: 0; }
   .poster.small { width: 56px; height: 84px; }
   .day { margin-top: 64px; }
 }
+
+/* Homepage DIY rail: a narrow newspaper column beside today's listings, in view from the first screen.
+   On a phone it becomes a strip of cards you swipe sideways, right under the headline. */
+.diy-rail { background: var(--wash); border-radius: 14px; padding: 20px 18px 18px; }
+.diy-rail .diy-stamp { margin: 0 0 10px; }
+.diy-rail h2 { margin: 0 0 14px; font: 600 20px/1.2 var(--sans); letter-spacing: -0.02em; }
+.diy-rail ul { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.diy-rail li a { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; text-decoration: none; }
+.diy-rail li + li a { border-top: 1px dashed var(--step); }
+.diy-rail .when { font: 500 13px/1.3 var(--sans); color: var(--green); font-variant-numeric: tabular-nums; }
+.diy-rail .what { font: 600 15.5px/1.3 var(--sans); letter-spacing: -0.01em; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.diy-rail a:hover .what { text-decoration: underline; text-underline-offset: 3px; }
+.diy-rail .where { font: 400 13px/1.35 var(--sans); color: var(--muted); }
+@media (min-width: 1000px) {
+  .home-grid.has-rail { display: grid; grid-template-columns: minmax(0, 1fr) 288px; column-gap: 48px; align-items: start; }
+  .home-grid.has-rail > .page-head, .home-grid.has-rail > .home-main { grid-column: 1; }
+  .home-grid.has-rail > .diy-rail { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 20px; margin-top: 40px;
+    max-height: calc(100vh - 40px); overflow-y: auto; }
+  .home-grid.has-rail .venue, .home-grid.has-rail .venue.diy { grid-template-columns: 190px minmax(0, 1fr); gap: 28px; }
+}
+@media (max-width: 999px) {
+  .diy-rail { margin-top: 20px; padding: 16px 0 14px 16px; }
+  .diy-rail h2 { font-size: 18px; margin-bottom: 8px; }
+  .diy-rail ul { flex-direction: row; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-right: 16px; margin-bottom: 10px; scrollbar-width: none; }
+  .diy-rail ul::-webkit-scrollbar { display: none; }
+  .diy-rail li { flex: 0 0 210px; scroll-snap-align: start; }
+  .diy-rail li a { height: 100%; padding: 12px; border-radius: 10px; background: var(--paper); }
+  .diy-rail li + li a { border-top: 0; }
+}
