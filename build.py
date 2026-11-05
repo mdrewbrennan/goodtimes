@@ -681,8 +681,7 @@ def render_home(data, screenings, now):
         for ev in list(diy_films.values())[:7])
     diy_html = (f"""
   <aside class="diy-rail" aria-label="Underground and DIY screenings">
-    <p class="diy-stamp">Underground &amp; DIY</p>
-    <h2>Off the multiplex map</h2>
+    <h2 class="diy-sign"><span class="neon">Underground <em>&amp;</em> DIY</span></h2>
     <ul>{diy_rows}</ul>
     <a class="more" href="/diy/">More screenings →</a>
   </aside>""" if diy_rows else "")

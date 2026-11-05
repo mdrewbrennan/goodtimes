@@ -406,6 +406,49 @@ footer .browse { border-bottom: 0; }
 .diy-rail { background: var(--wash); border-radius: 14px; padding: 20px 18px 18px; }
 .diy-rail .diy-stamp { margin: 0 0 10px; }
 .diy-rail h2 { margin: 0 0 14px; font: 600 20px/1.2 var(--sans); letter-spacing: -0.02em; }
+/* The rail's label is a little neon sign: hot-pink glitter lettering on a dark plate that hums, shimmers and flickers. */
+.diy-rail .diy-sign { position: relative; overflow: hidden; margin: 0 0 14px; padding: 16px 16px 15px; border-radius: 10px;
+  background: radial-gradient(130% 150% at 50% 0%, #34102A 0%, #170812 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 92, 168, .28), inset 0 0 28px rgba(255, 46, 136, .2), 0 8px 22px -12px rgba(184, 52, 74, .55);
+  font: 700 29px/1 var(--sans); letter-spacing: -0.035em; text-transform: uppercase; }
+.diy-sign .neon { display: inline-block; color: #FF6FB6;
+  filter: drop-shadow(0 0 1.5px #FF4FA3) drop-shadow(0 0 9px rgba(255, 46, 136, .75)); }
+.diy-sign em { font: italic 400 1.1em/1 Georgia, "Times New Roman", serif; text-transform: none; letter-spacing: 0; padding: 0 .04em; }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .diy-sign .neon { color: transparent; -webkit-background-clip: text; background-clip: text;
+    background:
+      radial-gradient(circle, #FFFFFF 0 .8px, transparent 1.3px) 0 0 / 9px 11px,
+      radial-gradient(circle, #FFD6EC 0 .7px, transparent 1.2px) 4px 6px / 13px 8px,
+      linear-gradient(100deg, #FF2E88 0%, #FF9AD2 25%, #FF2E88 50%, #FF9AD2 75%, #FF2E88 100%) 0 0 / 200% 100%;
+    -webkit-background-clip: text; background-clip: text; }
+}
+/* Glitter dust drifting over the plate. */
+.diy-sign::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .7;
+  background:
+    radial-gradient(circle, #FFF 0 1px, transparent 1.6px) 12% 22% / 100% 100% no-repeat,
+    radial-gradient(circle, #FFB3DA 0 1px, transparent 1.6px) 84% 18% / 100% 100% no-repeat,
+    radial-gradient(circle, #FFF 0 .8px, transparent 1.4px) 68% 82% / 100% 100% no-repeat,
+    radial-gradient(circle, #FF8CC6 0 .9px, transparent 1.5px) 28% 88% / 100% 100% no-repeat,
+    radial-gradient(circle, #FFF 0 .7px, transparent 1.3px) 94% 60% / 100% 100% no-repeat; }
+@media (prefers-reduced-motion: no-preference) {
+  .diy-sign .neon { animation: neon-shimmer 4s linear infinite, neon-hum 2.6s ease-in-out infinite alternate, diy-flicker 7s linear infinite; }
+  .diy-sign::after { animation: glitter-twinkle 2.2s steps(4) infinite; }
+  .diy-rail:hover .diy-sign .neon { animation-duration: 1.6s, 1.2s, 7s; }
+}
+@keyframes neon-shimmer {
+  from { background-position: 0 0, 4px 6px, 0 0; }
+  to   { background-position: 9px -11px, -9px 14px, -200% 0; }
+}
+@keyframes neon-hum {
+  from { filter: drop-shadow(0 0 1.5px #FF4FA3) drop-shadow(0 0 7px rgba(255, 46, 136, .55)); }
+  to   { filter: drop-shadow(0 0 2.5px #FF6FB6) drop-shadow(0 0 16px rgba(255, 46, 136, .95)); }
+}
+@keyframes glitter-twinkle {
+  0%, 100% { opacity: .75; transform: translate(0, 0); }
+  25% { opacity: .25; transform: translate(-3px, 2px); }
+  50% { opacity: .9; transform: translate(2px, -1px); }
+  75% { opacity: .4; transform: translate(-1px, -2px); }
+}
 .diy-rail ul { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .diy-rail li a { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; text-decoration: none; }
 .diy-rail li + li a { border-top: 1px dashed var(--step); }
@@ -423,6 +466,7 @@ footer .browse { border-bottom: 0; }
 @media (max-width: 999px) {
   .diy-rail { margin-top: 20px; padding: 16px 0 14px 16px; }
   .diy-rail h2 { font-size: 18px; margin-bottom: 8px; }
+  .diy-rail .diy-sign { margin-right: 16px; font-size: 25px; padding: 13px 14px 12px; }
   .diy-rail ul { flex-direction: row; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-right: 16px; margin-bottom: 10px; scrollbar-width: none; }
   .diy-rail ul::-webkit-scrollbar { display: none; }
   .diy-rail li { flex: 0 0 210px; scroll-snap-align: start; }
