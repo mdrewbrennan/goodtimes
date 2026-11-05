@@ -684,7 +684,7 @@ def render_home(data, screenings, now):
     <p class="diy-stamp">Underground &amp; DIY</p>
     <h2>Off the multiplex map</h2>
     <ul>{diy_rows}</ul>
-    <a class="more" href="/diy/">Every DIY screening →</a>
+    <a class="more" href="/diy/">More screenings →</a>
   </aside>""" if diy_rows else "")
 
     return f"""
