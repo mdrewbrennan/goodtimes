@@ -1634,6 +1634,9 @@ def render_about(data):
     <p>{NAME} is an aggregate of what&rsquo;s playing at Los Angeles&rsquo;s independent and repertory cinemas:
       revivals, new indies, 35mm and 70mm prints, Q&amp;As, festivals and the one-night-only things. I built this
       because I feel like I constantly miss out on sick films.</p>
+    <p>I built this for my friends and myself because it&rsquo;s just been a pain in the ass to figure out where
+      all the special film events are. I missed LA Loves a Car Chase at Coaxial, but because I made this website
+      I get to see it. That&rsquo;s cool.</p>
     <p>Updated every morning at 7am from each theater&rsquo;s own website and puts the day&rsquo;s screenings in
       one place. Tickets are always sold by the theater, so the times link straight to them.</p>
   </section>
