@@ -1,17 +1,19 @@
 """Laemmle: the Royal (West LA), Monica Film Center, Glendale, NoHo 7, Town Center 5 (Encino) and Newhall.
 
-laemmle.com is a server-rendered Drupal site with no JSON/JSON-LD for showtimes. The theater page
-lists one day at a time (?date=YYYY-MM-DD, with the available dates in a <select>), so we read the
-next few weeks of those day pages, then each film's page once for director / synopsis.
-Ticketing is tickets.laemmle.com (linked directly from each showtime).
+laemmle.com is a Next.js site (since November 2026; it was Drupal with one page per day before). Each
+theater page embeds a "films" list in its page data, with every upcoming showtime: local start time,
+ticket link (tickets.laemmle.com), sold-out and Q&A flags, plus the poster and runtime. The page's
+"Upcoming Q&As" box names the guests. Each film's own page gives the synopsis, year and director. If
+the films list is missing (the layout changed again), the theater fails loudly instead of listing
+nothing.
 
 Six houses means a lot of pages from one small site, which starts resetting connections when hit hard.
 So every request goes through _get: at most two at a time, spaced out, retried with a backoff. Film
-pages are cached across houses (the same films play at several), and a day page that still fails is
-skipped rather than failing the whole theater.
+pages are cached across houses (the same films play at several).
 """
 
 import html
+import json
 import re
 import threading
 import time
@@ -73,87 +75,77 @@ for _slug, _name, _hood, _address in [
         "url": f"{BASE}/theater/{_slug}", "page": f"{BASE}/theater/{_slug}",
     })
 
-OPTION = re.compile(r'<option value="(\d{4}-\d{2}-\d{2})"')
-MOVIE = re.compile(r'<div class="movie">(.*?)(?=<div class="movie">|<div class="theater-get-tickets-footer|\Z)', re.S)
-TITLE = re.compile(r'<div class="title">\s*<a href="([^"]+)">\s*(.*?)\s*</a>', re.S)
-TIME_LINK = re.compile(r'<div class="showtime([^"]*)">\s*<a href="([^"]+)">\s*(\d{1,2}:\d\d\s*[ap]m)\s*</a>', re.S | re.I)
-EVENT_TITLE = re.compile(r'(National Theatre Live|Reel Talk|Met Opera|Metropolitan Opera)', re.I)
-DETAIL_RUNTIME = re.compile(r'(\d+)\s*min', re.I)
+NEXT_CHUNK = re.compile(r'self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)')
+FILMS = '"films":['
+# The "Upcoming Q&As" box: film link, then the guests.
+QA = re.compile(r'"th-qa-film","href":"/films/([^"]+)".*?"th-qa-guest","children":"((?:[^"\\]|\\.)*)"', re.S)
+EVENT_TITLE = re.compile(r'(National Theatre Live|Reel Talk|Met Opera|Metropolitan Opera|The Royal Ballet)', re.I)
+META_DESC = re.compile(r'<meta name="description" content="([^"]*)"')
 
 
-def _dates(page):
-    today = date.today()
-    out = []
-    for d in OPTION.findall(page):
-        day = date.fromisoformat(d)
-        if today <= day <= today + timedelta(days=DAYS_AHEAD):
-            out.append(d)
-    return out
+def _page_data(page):
+    """The Next.js data embedded in a laemmle.com page, as one string."""
+    return "".join(json.loads(chunk) for chunk in NEXT_CHUNK.findall(page))
 
 
-def _film_details(path):
-    if path in _film_cache:
-        return _film_cache[path]
+def _films(data):
+    """The theater page's films list: [{slug, title, poster, runtime, showtimes: [{startsAt, ticketUrl, ...}]}]."""
+    i = data.find(FILMS)
+    if i < 0:
+        raise RuntimeError("laemmle.com page has no films list (layout changed?)")
+    films, _ = json.JSONDecoder().raw_decode(data, i + len(FILMS) - 1)
+    return films
+
+
+def _film_details(slug):
+    """Synopsis, year and director from the film's page, cached across houses."""
+    if slug in _film_cache:
+        return _film_cache[slug]
     try:
-        page = _get(BASE + path)
+        page = _get(f"{BASE}/films/{slug}")
     except Exception:
         return {}  # not cached, so another house can try again
-    director = re.search(r'field--name-field-director.*?<div class="field__items">(.*?)</div>\s*</div>', page, re.S)
-    synopsis = re.search(r'field--name-field-synopsis[^>]*>(.*?)</div>', page, re.S)
-    dur = re.search(r'field--name-field-duration.*?field--item">\s*(\d+)\s*<', page, re.S)
-    names = re.findall(r'<span class="field--item">([^<]+)</span>', director.group(1)) if director else []
-    # the full-size poster upload; the only styled rendition on the page is a 150px thumbnail
-    poster = re.search(r'field--name-field-poster\b.*?<img[^>]*?\ssrc="([^"]+)"', page, re.S)
-    image = https_url(html.unescape(poster.group(1)), BASE) if poster else None
-    _film_cache[path] = {
-        "image": image,
-        "director": ", ".join(clean(n).rstrip(",") for n in names) or None,
-        "blurb": blurb(synopsis.group(1)) if synopsis else None,
-        "runtime": int(dur.group(1)) if dur else None,
+    text = clean(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " | ", re.sub(r"<script.*?</script>", "", page, flags=re.S))))
+    text = re.sub(r"(?:\s*\|\s*)+", " | ", text)  # "Year | | 2026" -> "Year | 2026"
+    synopsis = META_DESC.search(page)
+    year = re.search(r"\bYear\s*\|\s*(\d{4})\b", text)
+    director = re.search(r"\bDirectors?\s*\|\s*([^|]{2,120}?)\s*\|", text)
+    _film_cache[slug] = {
+        "blurb": blurb(html.unescape(synopsis.group(1))) if synopsis else None,
+        "year": year.group(1) if year else None,
+        "director": director.group(1).strip() if director else None,
     }
-    return _film_cache[path]
+    return _film_cache[slug]
 
 
 def scrape(theater):
-    first = _get(theater["page"])  # if even this fails after retries, the theater fails (scrape.py logs it)
-    days = _dates(first)
+    data = _page_data(_get(theater["page"]))  # if this fails after retries, scrape.py logs the theater
+    films = _films(data)
+    guests = {slug: json.loads(f'"{who}"') for slug, who in QA.findall(data)}
+    today = date.today()
+    horizon = today + timedelta(days=DAYS_AHEAD)
 
-    def day_page(d):
-        if d == date.today().isoformat():
-            return d, first
-        try:
-            return d, _get(f"{theater['page']}?date={d}")
-        except Exception:
-            return d, ""  # one missing day shouldn't drop the other four weeks
-
+    upcoming = [f for f in films if any(today.isoformat() <= s.get("date", "") <= horizon.isoformat()
+                                        for s in f.get("showtimes") or [])]
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        pages = list(pool.map(day_page, days))
-    if days and not any(page for _, page in pages):
-        raise RuntimeError("laemmle.com returned no day pages")
-
-    shows, films = [], {}
-    for d, page in pages:
-        for block in MOVIE.findall(page):
-            t = TITLE.search(block)
-            if not t:
-                continue
-            path, title = t.group(1), clean(re.sub(r"<[^>]+>", "", t.group(2)))
-            rt = DETAIL_RUNTIME.search(block.split('class="showtimes')[0])
-            films[path] = {"title": title, "runtime": int(rt.group(1)) if rt else None}
-            for cls, url, tm in TIME_LINK.findall(block):  # past showtimes have no link, so are skipped
-                when = datetime.strptime(f"{d} {tm.replace(' ', '').upper()}", "%Y-%m-%d %I:%M%p")
-                shows.append((path, when, html.unescape(url), "sold" in cls.lower()))
-
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        details = dict(zip(films, pool.map(_film_details, films)))
+        details = dict(zip([f["slug"] for f in upcoming], pool.map(_film_details, [f["slug"] for f in upcoming])))
 
     out = []
-    for path, when, url, sold in shows:
-        f, det = films[path], details.get(path, {})
-        out.append(screening(
-            theater, f["title"], la_iso(when), url,
-            film_url=BASE + path, runtime=f["runtime"] or det.get("runtime"),
-            director=det.get("director"), blurb=det.get("blurb"), sold_out=sold, image=det.get("image"),
-            special_event=bool(EVENT_TITLE.match(f["title"])),
-        ))
+    for f in upcoming:
+        det = details.get(f["slug"], {})
+        for s in f.get("showtimes") or []:
+            if not (today.isoformat() <= s.get("date", "") <= horizon.isoformat()) or not s.get("startsAt"):
+                continue
+            text = det.get("blurb") or ""
+            if s.get("hasQandA"):
+                who = guests.get(f["slug"])
+                text = (f"Q&A with {who}. " if who else "Followed by a Q&A. ") + text
+            out.append(screening(
+                theater, f["title"], la_iso(datetime.fromisoformat(s["startsAt"][:19])),
+                s.get("ticketUrl") or f"{BASE}/films/{f['slug']}", film_url=f"{BASE}/films/{f['slug']}",
+                year=det.get("year"), director=det.get("director"),
+                runtime=f["runtime"] if isinstance(f.get("runtime"), int) else None,  # "$undefined" when unknown
+                blurb=blurb(text), sold_out=bool(s.get("soldOut")), image=https_url(f.get("poster")),
+                special_event=bool(EVENT_TITLE.match(f["title"])),
+            ))
     return out
