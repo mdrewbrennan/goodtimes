@@ -417,8 +417,7 @@ footer .browse { border-bottom: 0; }
 @media (min-width: 1000px) {
   .home-grid.has-rail { display: grid; grid-template-columns: minmax(0, 1fr) 288px; column-gap: 48px; align-items: start; }
   .home-grid.has-rail > .page-head, .home-grid.has-rail > .home-main { grid-column: 1; }
-  .home-grid.has-rail > .diy-rail { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 20px; margin-top: 40px;
-    max-height: calc(100vh - 40px); overflow-y: auto; }
+  .home-grid.has-rail > .diy-rail { grid-column: 2; grid-row: 1 / span 2; margin-top: 40px; }  /* scrolls with the page */
   .home-grid.has-rail .venue, .home-grid.has-rail .venue.diy { grid-template-columns: 190px minmax(0, 1fr); gap: 28px; }
 }
 @media (max-width: 999px) {
