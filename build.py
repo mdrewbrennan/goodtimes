@@ -1231,8 +1231,10 @@ COLLECTIONS = [
      "Guests are named when the theater says who's coming; plans change, so check the theater's page before you go.",
      lambda s: "Guests in person" in s["event_tags"]),
     ("diy", "DIY, Underground & Micro-Cinema Screenings in LA", DIY_LABEL, "DIY and micro-cinemas in LA",
-     ("DIY screening", "DIY screenings"), "Artist-run rooms, storefront micro-cinemas, archives and pop-up series: "
-     "the small, one-off screenings you won't find on a multiplex schedule. Seats are few, so check the venue's page!!",
+     ("DIY screening", "DIY screenings"), "Artist-run rooms, storefront micro-cinemas, archives and pop-up series. "
+     "I want to make this inclusive, so if you have a space that you want to submit, "
+     '<a href="https://www.instagram.com/spacemania/" target="_blank" rel="noopener">send me a shout</a>. '
+     "FYI seats are few, so check the venue's page!!",
      lambda s: s["is_diy"]),
     ("double-features", "Double Features in Los Angeles", "Two films, one bill", "Double features in LA",
      ("double bill", "double bills"), "Two films programmed together on one bill at LA's repertory theaters.", is_double),
@@ -1388,7 +1390,7 @@ def collection_pages(data, screenings, tmap, today, updated):
                    if shows else "")
         path = f"/{key}/"
         desc = (f'{plural(len(shows), *what)} at {plural(k, "Los Angeles theater")}, with dates, times and tickets. '
-                'Updated every morning.') if shows else f"{about[:150]}"
+                'Updated every morning.') if shows else re.sub(r"<[^>]+>", "", about)[:150]  # no link markup in a description
         pages[path] = page(f"{title} | {SITE_NAME}", desc, path, "diy" if key == "diy" else None,
                            collection_page(heading, eyebrow, shows, tmap, today, counted, about,
                                            f"Nothing is listed right now. New screenings are added every morning.",
