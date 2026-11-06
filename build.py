@@ -338,7 +338,7 @@ def site_graph():
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
 NAV = (("home", "/", "Today&rsquo;s Showings"), ("diy", "/diy/", "Underground &amp; DIY"),
-       ("listings", "/listings/", "All Listings"), ("about", "/about/", "Who Is GT?"))  # the last one sits at the far right
+       ("listings", "/listings/", "All Listings"), ("about", "/about/", "About GoodTimes"))  # the last one sits at the far right
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
           ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
