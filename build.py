@@ -1634,7 +1634,7 @@ def render_about(data):
 <main><div class="wrap about">
   <header class="page-head">
     <p class="eyebrow">About</p>
-    <h1>WHAT IS A GOODTIME?</h1>
+    <h1>To Live and Watch Movies in LA</h1>
   </header>
   <section class="prose">
     <p>I love movies. I love cinema. And I love film. If you have a special moving image playing somewhere
