@@ -317,7 +317,7 @@ def logo_html():
 
 # The marquee: programming culture, not navigation. Decorative, so it's hidden from screen readers.
 MARQUEE = ["35mm &amp; 70mm", "Repertory classics", "Midnight movies", "One night only", "Special events",
-           "Q&amp;As &amp; guests", "Restorations", "Micro-cinemas", "Film festivals"]
+           "Q&amp;As &amp; guests", "Restorations", "Micro-cinemas", "Film festivals", "Freaky sexy cool man"]
 
 
 def marquee_html():
