@@ -407,7 +407,8 @@ def page(title, description, path, active, body, updated, script="", head="", in
     <a class="logo" href="/">{logo_html()}</a>
     <p class="tagline">{TAGLINE}</p>
   </div>
-  <nav class="site-nav">{nav}</nav>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav"><span class="menu-icon" aria-hidden="true"></span>Menu</button>
+  <nav class="site-nav" id="site-nav" aria-label="Site">{nav}</nav>
 </div></header>
 {marquee_html()}
 {body}
@@ -939,6 +940,18 @@ TMDB_CREDIT = ('<span>Posters, ratings and trailers from <a href="https://www.th
 
 # Share buttons and the small "Add to calendar" menus, on every page.
 COMMON_SCRIPT = """<script>
+  // Phones: the header's Menu button opens the site nav as a small panel (without this script the nav just shows).
+  (() => {
+    const mast = document.querySelector(".mast"), button = mast && mast.querySelector(".menu-toggle");
+    if (!button) return;
+    mast.classList.add("has-menu");
+    const set = open => { mast.classList.toggle("open", open); button.setAttribute("aria-expanded", open ? "true" : "false"); };
+    button.addEventListener("click", () => set(!mast.classList.contains("open")));
+    document.addEventListener("click", e => { if (!mast.contains(e.target)) set(false); });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && mast.classList.contains("open")) { set(false); button.focus(); }
+    });
+  })();
   // A poster that fails to load (errors don't bubble, so this listens on the way down).
   document.addEventListener("error", e => {
     const img = e.target;
