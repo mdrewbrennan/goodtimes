@@ -514,8 +514,10 @@ footer :focus-visible { outline-color: var(--pink); }
   .site-nav { gap: 6px 16px; align-items: flex-start; }  /* keep the stacked tabs down the left edge */
   .site-nav a { font-size: 12.5px; letter-spacing: .05em; }
   .site-nav .nav-end { margin-left: 0; }
-  .control-row .picker { flex: 1 1 140px; }
-  .picker summary { min-width: 0; }
+  /* Phone filters: All theaters, then All genres, each on its own line; the three toggles share the next line */
+  .control-row .picker { flex: 1 1 100%; }
+  .picker summary { min-width: 0; white-space: nowrap; }
+  .control-row > .chip { flex: 1 1 auto; padding: 0 8px; white-space: nowrap; font-size: 12px; letter-spacing: .04em; }
   .marquee-track { font-size: 12px; padding-block: 10px; }
   .page-head { padding-top: 32px; }
   .page-head h1 { font-size: 40px; }
