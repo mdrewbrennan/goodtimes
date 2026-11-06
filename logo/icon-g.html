@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- The G, cut from the original script logo (goodtimes-script.png, with the first o masked out) and centred in a transparent
+     square. render_images.sh screenshots this page for the tab icon; the artwork itself is never redrawn. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 512px; height: 512px; background: transparent; overflow: hidden; }
+  body { display: grid; place-items: center; }
+  .g { width: 117px; height: 159px; overflow: hidden; transform: scale(3.1);
+       /* hide the first o (an ellipse centred about x 128, y 80 in the artwork); the G's crossbar ends at its edge */
+       -webkit-mask-image: radial-gradient(31px 37px at 128px 80px, transparent 97%, #000 100%);
+               mask-image: radial-gradient(31px 37px at 128px 80px, transparent 97%, #000 100%); }
+  .g img { display: block; width: 520px; height: 159px; }
+</style>
+</head>
+<body><div class="g"><img src="goodtimes-script.png" alt=""></div></body>
+</html>
