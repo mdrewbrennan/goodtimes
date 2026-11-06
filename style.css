@@ -1,22 +1,34 @@
-/* Inter, served from /fonts (the latin and latin-ext subsets of Google Fonts' variable Inter, OFL licensed). */
-@font-face { font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
-  src: url("/fonts/inter-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
-  src: url("/fonts/inter-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+/* Type (Brand Book §4), served from /fonts, latin subsets from Google Fonts, OFL licensed:
+   Archivo Black for headlines, DM Sans for interface and body, IBM Plex Mono for dates, times, formats and labels. */
+@font-face { font-family: "Archivo Black"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/archivo-black-latin.woff2") format("woff2"); }
+@font-face { font-family: "DM Sans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/fonts/dm-sans-latin.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/plex-mono-400-latin.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/plex-mono-500-latin.woff2") format("woff2"); }
+/* Kaushan Script, only for the Underground & DIY sign, which echoes the script logo (it never stands in for the logo itself). */
+@font-face { font-family: "Kaushan Script"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/kaushan-script-latin.woff2") format("woff2"); }
 
-/* Layout: a white page with one centered column. Structure comes from type and hairline rules;
-   #1B4A38 green appears only as text (links, showtimes, tags, venue names), never as a fill. */
+/* Color (Brand Book §3). Cream page, near-black type and outlines, red for action and emphasis,
+   blue as the signature accent (links, navigation, focus), pink as a supporting surface.
+   GoodTimes Red is 4.1:1 on cream, so it is for large type and fills; small red text and white-on-red use --red-ink (5.5:1). */
 :root {
-  --green: #1B4A38;
-  --paper: #FFFFFF;
-  --ink: #111111;
-  --muted: #6B6B6B;
-  --faint: #A3A3A3;
-  --rule: #E5E5E5;
-  --wash: #F4F4F4;         /* hover background */
-  --sans: "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --red: #E63313;
+  --red-ink: #C2290B;
+  --pink: #FFB9AA;
+  --blue: #304CFF;
+  --cream: #FFF7EF;
+  --ink: #100D0C;
+  --white: #FFFFFF;
+  --accent: var(--blue);
+  --paper: var(--cream);
+  --card: var(--white);
+  --muted: #5E5550;        /* 6.9:1 on cream */
+  --faint: #8A817B;        /* only for sold-out and disabled */
+  --rule: #E9DBCD;
+  --wash: #FBEADF;         /* hover background */
+  --step: #F3DDD0;
+  --display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --sans: "DM Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   color-scheme: light;
 }
 
@@ -37,26 +49,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .tagline { margin: 0; padding-left: 16px; border-left: 1px solid var(--rule); font: 500 15px/1.3 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
 .logo { display: flex; align-items: center; min-height: 52px; text-decoration: none; min-width: 0; }
-.logo-img { display: block; height: 56px; width: auto; max-width: 100%; animation: logo-neon 14s linear 1.5s infinite; }
-/* About every 14 seconds the wordmark acts like a neon sign: it glows, cuts out, sputters, flares white-hot and settles. */
-@keyframes logo-neon {
-  0%, 18%, 100% { filter: none; }
-  2%   { filter: brightness(1.05) drop-shadow(0 0 5px rgba(255, 80, 130, .55)); }
-  4%   { filter: brightness(.45) saturate(.7) drop-shadow(0 0 2px rgba(60, 80, 255, .4)); }
-  5.5% { filter: brightness(.3) saturate(.6); }
-  6.2% { filter: brightness(1.1) drop-shadow(0 0 6px rgba(255, 80, 130, .6)); }
-  6.8% { filter: brightness(.35) saturate(.6); }
-  8%   { filter: brightness(1.7) saturate(.5) drop-shadow(0 0 8px rgba(255, 120, 170, .9)) drop-shadow(0 0 20px rgba(150, 90, 255, .55)); }
-  9%   { filter: brightness(1.35) saturate(.7) drop-shadow(0 0 7px rgba(255, 110, 160, .8)) drop-shadow(0 0 16px rgba(150, 90, 255, .45)); }
-  12%  { filter: brightness(1.08) drop-shadow(0 0 6px rgba(255, 90, 140, .6)) drop-shadow(0 0 12px rgba(120, 90, 255, .3)); }
-}
-@media (prefers-reduced-motion: reduce) { .logo-img { animation: none; } }
-.logo-text { font: 700 26px/1 var(--sans); color: var(--green); text-transform: uppercase; }
+.logo-img { display: block; height: 52px; width: auto; max-width: 100%; }
+.logo-text { font: 700 26px/1 var(--sans); color: var(--accent); text-transform: uppercase; }
 .site-nav { display: flex; flex-wrap: wrap; gap: 2px 22px; flex: 1 1 auto; justify-content: flex-end; }
 .site-nav .nav-end { margin-left: auto; }  /* "Who Is GT?" always sits at the far right */
 .site-nav a { font: 500 15px var(--sans); text-decoration: none; color: var(--muted); padding-block: 6px; white-space: nowrap; }  /* labels never break mid-way */
 .site-nav a:hover { color: var(--ink); }
-.site-nav a[aria-current="page"] { color: var(--green); }
+.site-nav a[aria-current="page"] { color: var(--accent); }
 /* The DIY tab is a little marquee in the logo's neon pink: slightly crooked, ringed by dots that chase around it, and it flickers now and then. */
 .site-nav .nav-diy, .site-nav .nav-diy:hover, .site-nav .nav-diy[aria-current="page"] {
   --bulb: #E07C8C; color: #B8344A; padding: 6px 13px; border-radius: 2px; transform: rotate(-2deg); align-self: center;
@@ -86,7 +85,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .diy-page .venue.diy .film + .film { border-top-style: dashed; }
 
 /* Shared pieces */
-.time { display: inline-block; font: 500 13.5px/1 var(--sans); color: var(--green); text-decoration: none; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.time { display: inline-block; font: 500 13.5px/1 var(--sans); color: var(--accent); text-decoration: none; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .time:hover { border-color: var(--ink); }
 .time.sold-out { color: var(--faint); text-decoration: line-through; }
 .time.sold-out:hover { border-color: var(--rule); }
@@ -94,9 +93,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .time.past { opacity: .4; }
 .venue .time.past, .film.past, .venue.past, .day.past { display: none; }
 .tags { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 500 11px/1.4 var(--sans); text-transform: uppercase; letter-spacing: .08em; }
-.tag { color: var(--green); }
+.tag { color: var(--accent); }
 .tag.format { color: var(--muted); }
-.more { font: 500 14px var(--sans); color: var(--green); text-decoration: none; white-space: nowrap; }
+.more { font: 500 14px var(--sans); color: var(--accent); text-decoration: none; white-space: nowrap; }
 .more:hover { text-decoration: underline; text-underline-offset: 3px; }
 .note { color: var(--muted); margin: 0; padding-block: 12px; }
 
@@ -115,7 +114,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .venue:last-child { border-bottom: 0; }
 .venue-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
 .venue-name { margin: 0; font: 600 18px/1.25 var(--sans); letter-spacing: -0.015em; }
-.venue-name a { color: var(--green); text-decoration: none; }
+.venue-name a { color: var(--accent); text-decoration: none; }
 .venue-name a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .venue-meta { margin: 0; display: flex; gap: 12px; font: 400 12px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .venue-op { margin: 0; font: 400 13px/1.3 var(--sans); color: var(--muted); }
@@ -163,7 +162,7 @@ a.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 /* Trailer, add to calendar and share, under each film */
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 2px; }
-.act { font: 500 13px var(--sans); color: var(--green); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: none; list-style: none; }
+.act { font: 500 13px var(--sans); color: var(--accent); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: none; list-style: none; }
 .act:hover { text-decoration: underline; text-underline-offset: 3px; }
 .act-menu { position: relative; }
 .act-menu summary::-webkit-details-marker { display: none; }
@@ -183,7 +182,7 @@ a.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
 .pick h3 a:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
 .pick .why { margin: 0 0 8px; max-width: 62ch; }
 .pick-when { list-style: none; margin: 0; padding: 0; font: 400 13px/1.6 var(--sans); color: var(--muted); }
-.pick-when a { color: var(--green); text-decoration: none; font-weight: 500; }
+.pick-when a { color: var(--accent); text-decoration: none; font-weight: 500; }
 .pick-when .muted, .pick-when.muted { color: var(--muted); }
 
 /* Homepage: upcoming special events */
@@ -197,8 +196,8 @@ a.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
 .upcoming-foot { padding-top: 16px; }
 
 /* DIY and micro-cinemas: a hand-stamped look. Dashed rules and a slightly crooked stamp, still green text on white. */
-.diy-stamp { display: inline-block; margin: 2px 0 0; padding: 3px 8px 2px; border: 1.5px dashed var(--green); border-radius: 3px;
-  font: 600 10.5px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--green); transform: rotate(-2deg); white-space: nowrap; }
+.diy-stamp { display: inline-block; margin: 2px 0 0; padding: 3px 8px 2px; border: 1.5px dashed var(--accent); border-radius: 3px;
+  font: 600 10.5px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); transform: rotate(-2deg); white-space: nowrap; }
 .diy-stamp a { color: inherit; text-decoration: none; }
 .diy-stamp a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .venue.diy { border-bottom-style: dashed; }
@@ -215,7 +214,7 @@ a.tag:hover { text-decoration: underline; text-underline-offset: 2px; }
 .diy-list .when b { font-weight: 600; font-size: 14px; color: var(--ink); letter-spacing: .02em; }
 .diy-list h3 { margin: 0 0 4px; font: 600 18px/1.3 var(--sans); letter-spacing: -0.01em; }
 .diy-list .where { font: 400 13px/1.4 var(--sans); color: var(--muted); text-align: right; }
-.chip-diy { border-style: dashed; border-color: var(--green); color: var(--green); }
+.chip-diy { border-style: dashed; border-color: var(--accent); color: var(--accent); }
 .sold-note { color: var(--ink); }
 
 /* Listings controls */
@@ -227,7 +226,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .chip { cursor: pointer; }
 .chip:hover, .select:hover { border-color: var(--ink); }
 .chip.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.chip.on::before { content: "✓ "; color: var(--green); }
+.chip.on::before { content: "✓ "; color: var(--accent); }
 .select { cursor: pointer; padding-right: 32px; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 17px) 15px, calc(100% - 12px) 15px; background-size: 5px 5px; background-repeat: no-repeat; max-width: 100%; }
 .picker { position: relative; }
 .picker summary { display: flex; align-items: center; list-style: none; min-width: 170px; }
@@ -239,7 +238,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .option input { margin: 0; accent-color: var(--ink); align-self: center; }
 .option .hood { grid-column: 2; font: 400 11px var(--sans); text-transform: uppercase; letter-spacing: .06em; }
 .menu-foot { border-top: 1px solid var(--rule); margin-top: 4px; padding: 8px 10px 4px; }
-.link-button { font: 500 14px var(--sans); color: var(--green); background: none; border: 0; padding: 0; cursor: pointer; }
+.link-button { font: 500 14px var(--sans); color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
 .link-button:hover { text-decoration: underline; text-underline-offset: 3px; }
 .search { flex: 1 1 200px; min-width: 0; max-width: 280px; margin-left: auto; font-weight: 400; }
 .search::placeholder { color: var(--faint); }
@@ -248,10 +247,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .days a { flex: 0 0 auto; text-decoration: none; text-align: center; font: 600 15px/1.1 var(--sans); padding: 5px 8px; border-radius: 8px; min-width: 40px; font-variant-numeric: tabular-nums; }
 .days a span { display: block; font: 400 10px var(--sans); text-transform: uppercase; color: var(--muted); letter-spacing: .06em; }
 .days a:hover { background: var(--wash); }
-.days a.has-special::after { content: "•"; display: block; height: 6px; line-height: 6px; font-size: 14px; color: var(--green); }
+.days a.has-special::after { content: "•"; display: block; height: 6px; line-height: 6px; font-size: 14px; color: var(--accent); }
 
 .menu-group + .menu-group { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 4px; }
-.group-head { display: block; width: 100%; text-align: left; font: 500 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--green); background: none; border: 0; padding: 8px 10px 4px; cursor: pointer; }
+.group-head { display: block; width: 100%; text-align: left; font: 500 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); background: none; border: 0; padding: 8px 10px 4px; cursor: pointer; }
 .group-head:hover { text-decoration: underline; text-underline-offset: 3px; }
 .venue-meta .dist { color: var(--ink); }
 .near-status { margin: 0; font-size: 14px; color: var(--muted); }
@@ -267,7 +266,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .event h1 { margin: 0; font: 600 clamp(30px, 5vw, 44px)/1.08 var(--sans); letter-spacing: -0.03em; text-wrap: balance; }
 .event h1 a { text-decoration: none; }
 .event .times { justify-content: flex-start; max-width: none; margin-top: 6px; }
-.event .eyebrow a { text-decoration: none; color: var(--green); }
+.event .eyebrow a { text-decoration: none; color: var(--accent); }
 .blurb.full { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
 .event-foot { margin: 16px 0 0; }
 
@@ -276,7 +275,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .prose h2 { font: 600 22px/1.2 var(--sans); letter-spacing: -0.02em; margin: 40px 0 8px; }
 .prose h3 { font: 500 12px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 4px; }
 .prose p { margin: 0 0 12px; }
-.prose a { color: var(--green); }
+.prose a { color: var(--accent); }
 .about-theaters { list-style: none; margin: 0; padding: 0; }
 .about-theaters li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
 .about-theaters li > a { font-weight: 600; text-decoration: none; color: var(--ink); }
@@ -290,7 +289,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .intro { max-width: 68ch; margin-top: 14px; }
 .lede { margin: 0 0 8px; font: 500 18px/1.45 var(--sans); color: var(--ink); }
 .about-page { margin: 0 0 8px; color: var(--muted); }
-.about-page a, .theater-facts a { color: var(--green); }
+.about-page a, .theater-facts a { color: var(--accent); }
 .theater-facts { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
 .solo-list { list-style: none; margin: 0; padding: 0; }
 .solo-list .film:first-child { padding-top: 14px; }
@@ -299,17 +298,17 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .area-head a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .theater-list { list-style: none; margin: 0; padding: 0; }
 .theater-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
-.theater-list li > a { font-weight: 600; color: var(--green); text-decoration: none; }
+.theater-list li > a { font-weight: 600; color: var(--accent); text-decoration: none; }
 .theater-list li > a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .theater-list .hood { font-size: 13px; }
 .theater-list .count { margin-left: auto; font-size: 13px; color: var(--muted); }
 footer .browse { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px 16px; padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--rule); }
-footer .browse a { color: var(--green); text-decoration: none; font-size: 13px; }
+footer .browse a { color: var(--accent); text-decoration: none; font-size: 13px; }
 footer .browse a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-.days a.later { color: var(--green); }
+.days a.later { color: var(--accent); }
 .listings { padding-block: 0 80px; }
-.to-top { position: fixed; z-index: 15; right: max(20px, calc(env(safe-area-inset-right, 0px) + 12px)); bottom: max(84px, calc(env(safe-area-inset-bottom, 0px) + 76px)); font: 500 14px var(--sans); color: var(--green); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .08); }
+.to-top { position: fixed; z-index: 15; right: max(20px, calc(env(safe-area-inset-right, 0px) + 12px)); bottom: max(84px, calc(env(safe-area-inset-bottom, 0px) + 76px)); font: 500 14px var(--sans); color: var(--accent); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .08); }
 .to-top:hover { border-color: var(--ink); }
 .empty { color: var(--muted); padding: 40px 0; }
 
@@ -350,128 +349,206 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   .diy-list .where { grid-column: 2; text-align: left; margin-top: -6px; }
 }
 
-/* Restyle (after taste-skill): hairline rules and tiny tracked caps give way to space, tone steps
-   and a larger type scale; the page is wider. Delete this block to return to the older look. */
-:root { --wash: #F2F2EF; --step: #E9E9E4; }
+
+/* ---------- GoodTimes (Brand Book v1.0) ----------
+   A neighborhood cinema marquee crossed with an independent film magazine: cream paper, black type and outlines,
+   directional offset shadows (blue on cream, pink on blue or black), mono for anything a projectionist would print. */
 .wrap { max-width: 1120px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+body { font-family: var(--sans); }
+::selection { background: var(--pink); color: var(--ink); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.eyebrow { display: flex; align-items: center; gap: 14px; font: 500 13px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .14em; color: var(--ink); }
+.eyebrow::before { content: ""; flex: none; width: 40px; height: 4px; background: var(--blue); }
 
-/* Masthead and first screen: no rules, sentence case */
-.mast { border-bottom: 0; }
-.tagline { border-left: 0; padding-left: 0; color: var(--muted); font-weight: 400; }
-.site-nav a { font-size: 16px; }
-.eyebrow { font: 400 17px/1.4 var(--sans); text-transform: none; letter-spacing: 0; color: var(--muted); }
+/* Masthead: a blue bar across the top, the logo with room to breathe, a heavy rule underneath */
+.mast { border-top: 6px solid var(--blue); border-bottom: 0; }
+.mast .wrap { padding-block: 16px 14px; }
+.mast .wrap::after { content: ""; flex-basis: 100%; height: 3px; background: var(--ink); margin-top: 6px; }
+.logo-img { height: 68px; }
+.logo-text { font: 400 30px/1 var(--display); color: var(--red); }
+.tagline { border-left: 0; padding-left: 0; font: 500 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); max-width: 22ch; }
+.site-nav { gap: 2px 26px; align-items: center; }
+.site-nav a { font: 700 14px var(--sans); text-transform: uppercase; letter-spacing: .07em; color: var(--ink); padding: 8px 0; }
+.site-nav a:hover { color: var(--blue); }
+.site-nav a[aria-current="page"] { color: var(--blue); box-shadow: inset 0 -3px 0 var(--blue); }
+/* The DIY tab keeps its chasing bulbs, now in GoodTimes red */
+.site-nav .nav-diy, .site-nav .nav-diy:hover, .site-nav .nav-diy[aria-current="page"] { --bulb: var(--red); color: var(--red-ink); padding: 7px 13px; box-shadow: none; }
 
-/* Controls: a tone step, no rule */
-.controls { border-bottom: 0; background: var(--wash); }
-.chip, .select, .search { border: 0; background-color: var(--paper); }
-.home-search .search, .home-search .chip, .home-search button { background-color: var(--wash); }
-.chip:hover, .select:hover { background-color: var(--step); }
-.chip.on, .picker.on summary { box-shadow: none; background: var(--ink); color: var(--paper); }
-.chip.on::before { color: #F3B3BD; }
-.days a span { font-size: 12px; text-transform: none; letter-spacing: 0; }
-.days a:hover { background: var(--step); }
+/* The marquee (Brand Book §5): programming culture, never navigation, never the only place information lives */
+.marquee { overflow: hidden; background: var(--blue); color: var(--white); border-block: 4px solid var(--ink); box-shadow: 0 8px 0 var(--pink); margin-bottom: 8px; }
+.marquee-track { display: flex; align-items: center; width: max-content; padding-block: 12px; font: 500 14px/1 var(--mono); text-transform: uppercase; letter-spacing: .16em; white-space: nowrap; }
+.marquee-track span { padding-inline: 22px; }
+.marquee-track i { font-style: normal; color: var(--pink); font-size: 16px; }
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track { animation: marquee 70s linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+}
+@keyframes marquee { to { transform: translateX(-50%); } }
 
-/* Days and venues: space and scale instead of rules */
-.day { margin-top: 96px; }
-.page-head + .day { margin-top: 24px; }
-.day-head { border-bottom: 0; padding-bottom: 20px; }
-.day-head h2 { font-size: clamp(30px, 3.6vw, 44px); letter-spacing: -0.035em; }
-.day-head .date, .day-head .count { font-size: 15px; letter-spacing: 0; }
-.venue, .venue.diy { border-bottom: 0; padding: 36px 0 28px; gap: 40px; grid-template-columns: 240px minmax(0, 1fr); }
-.venue-name { font-size: 22px; letter-spacing: -0.025em; }
-.venue-meta { font-size: 14px; text-transform: none; letter-spacing: 0; }
-.film:not(.past, [hidden]) ~ .film { border-top: 0; }
+/* Headlines: heavy, compact, uppercase, tight */
+.page-head { padding-block: 44px 8px; }
+.page-head h1 { margin-top: 14px; font: 400 clamp(40px, 6.4vw, 76px)/.95 var(--display); text-transform: uppercase; letter-spacing: -0.035em; }
+.page-head h1 em, .event h1 em { font-style: normal; color: var(--red); text-shadow: 4px 4px 0 var(--pink); }
+.day { margin-top: 88px; }
+.page-head + .day { margin-top: 32px; }
+.day-head { align-items: flex-end; border-bottom: 3px solid var(--ink); padding-bottom: 14px; }
+.day-head h2 { gap: 14px; font: 400 clamp(30px, 3.8vw, 46px)/1 var(--display); text-transform: uppercase; letter-spacing: -0.03em; }
+.day-head .date, .day-head .count { font: 500 13px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.area-head { margin-top: 64px; padding-bottom: 12px; border-bottom: 3px solid var(--ink); font: 400 32px/1.05 var(--display); text-transform: uppercase; letter-spacing: -0.025em; }
+.lede { font: 500 19px/1.5 var(--sans); }
+
+/* Theaters and films */
+.venue, .venue.diy { gap: 40px; grid-template-columns: 240px minmax(0, 1fr); padding: 32px 0 24px; border-bottom: 1.5px solid var(--rule); }
+.venue.diy { border-bottom-style: dashed; }
+.venue-name { font: 400 20px/1.15 var(--display); text-transform: uppercase; letter-spacing: -0.01em; }
+.venue-name a { color: var(--ink); text-decoration: underline 3px transparent; text-underline-offset: 4px; }
+.venue-name a:hover { color: var(--blue); text-decoration-color: var(--blue); }
+.venue-meta, .venue-op { font: 500 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.venue-meta .dist { color: var(--blue); }
 .film { padding: 16px 0; gap: 24px; }
-.film h4 { font-size: 22px; letter-spacing: -0.02em; }
-.meta, .film .blurb { color: #4D4D4D; }
-.tags { font-size: 13px; text-transform: none; letter-spacing: 0; }
+.film:not(.past, [hidden]) ~ .film { border-top: 1.5px dashed var(--rule); }
+.film h4 { font: 400 22px/1.15 var(--display); letter-spacing: -0.015em; }
+.film h4 a:hover { color: var(--blue); }
+.meta { font: 400 13px/1.5 var(--mono); color: var(--muted); }
+.film .blurb, .blurb.full { font-size: 15px; color: #3E3632; }
+.guests { font-weight: 600; }
+.tags { gap: 6px 10px; font: 500 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+.tag { color: var(--red-ink); }
+.tag.format { color: var(--ink); background: var(--pink); padding: 1px 7px; }
 .film.has-poster { grid-template-columns: 72px minmax(0, 1fr) auto; }
-.poster { border-radius: 0; background: var(--step); }
+.poster { border-radius: 0; background: var(--step); outline: 2px solid var(--ink); outline-offset: -2px; }
 .poster.small { width: 72px; height: 108px; }
+.poster.large { box-shadow: 8px 8px 0 var(--blue); }
+.film:target { background: var(--wash); box-shadow: -12px 0 0 var(--wash), 12px 0 0 var(--wash); }
 
-/* Showtimes: flat filled blocks, square, the one place the accent fills */
-.time { border: 0; border-radius: 0; background: var(--wash); font-size: 15px; padding: 9px 12px; }
-.time:hover { background: var(--green); color: var(--paper); }
-.time.sold-out:hover { background: var(--wash); color: var(--faint); }
+/* Showtimes: the main action. Outlined tickets with a blue offset; they press in when clicked. */
+.times { gap: 10px; }
+.time { font: 500 14px/1 var(--mono); color: var(--ink); background: var(--card); border: 2px solid var(--ink); border-radius: 0; padding: 9px 11px;
+  box-shadow: 3px 3px 0 var(--blue); transition: transform .08s ease, box-shadow .08s ease; }
+.time:hover { background: var(--red-ink); border-color: var(--ink); color: var(--white); }
+.time:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--blue); }
+.time.sold-out, .time.sold-out:hover { color: var(--faint); background: transparent; border-color: var(--rule); box-shadow: none; }
+.act { font: 700 13px var(--sans); color: var(--blue); }
+.more, .link-button { font: 700 14px var(--sans); color: var(--blue); }
+.more:hover, .link-button:hover { text-decoration: underline 2px; text-underline-offset: 4px; }
 
-/* Lists: no rules */
-.pick, .upcoming-list a, .diy-list a, .about-theaters li, .theater-list li { border-bottom: 0; }
-.upcoming-list .when, .diy-list .when, .prose h3, .option .hood, .group-head { text-transform: none; letter-spacing: 0; font-size: 14px; }
+/* Search, filters and dates: square, outlined, offset shadows */
+.controls { background: var(--paper); border-bottom: 3px solid var(--ink); }
+.controls .wrap { padding-block: 16px 14px; gap: 14px; }
+.control-row { gap: 10px; }
+.chip, .select, .search { height: 42px; border: 2px solid var(--ink); border-radius: 0; background-color: var(--card); color: var(--ink);
+  font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .06em; }
+.chip:hover, .select:hover { border-color: var(--ink); background-color: var(--pink); }
+.chip.on, .picker.on summary { background: var(--blue); color: var(--white); box-shadow: 3px 3px 0 var(--ink); }
+.chip.on::before { color: var(--white); }
+.chip-diy { border-style: dashed; border-color: var(--red-ink); color: var(--red-ink); }
+.chip-diy.on { background: var(--red-ink); border-color: var(--ink); border-style: solid; }
+.select { background-position: calc(100% - 17px) 17px, calc(100% - 12px) 17px; }
+.search { font: 400 15px var(--sans); text-transform: none; letter-spacing: 0; box-shadow: 4px 4px 0 var(--pink); }
+.search::placeholder { color: var(--muted); }
+.menu { border: 2px solid var(--ink); border-radius: 0; background: var(--card); box-shadow: 6px 6px 0 var(--blue); }
+.option, .act-menu .menu a { border-radius: 0; }
+.option input { accent-color: var(--blue); }
+.option .hood, .group-head { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+.menu-foot, .menu-group + .menu-group { border-top: 1.5px solid var(--rule); }
+.days { gap: 8px; padding: 2px 6px 6px 2px; }
+.days a { min-width: 58px; padding: 8px 10px 7px; border: 2px solid var(--rule); border-radius: 0; background: var(--card); font: 400 19px/1.1 var(--display); }
+.days a span { margin-bottom: 4px; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.days a:hover { border-color: var(--ink); background: var(--pink); }
+.days a:first-child { border-color: var(--ink); background: var(--pink); box-shadow: 4px 4px 0 var(--blue); }  /* today */
+.days a:first-child span { color: var(--ink); }
+.days a.has-special::after { color: var(--red); }
+.days a.later { color: var(--blue); border-style: dashed; }
+html { scroll-padding-top: 190px; }
+.listings .venue-head { top: 190px; }
+.near-status { font-family: var(--mono); font-size: 13px; }
+
+/* Homepage search: one prominent search, with the red primary action */
+.home-search { margin-top: 26px; gap: 12px; }
+.home-search .search { height: 50px; font-size: 16px; }
+.home-search button { height: 50px; padding: 0 22px; background: var(--red-ink); color: var(--white); border-color: var(--ink); box-shadow: 4px 4px 0 var(--blue); }
+.home-search button:hover { background: var(--ink); }
+
+/* Picks, upcoming events, DIY */
+.pick, .upcoming-list a, .diy-list a, .about-theaters li, .theater-list li { border-bottom: 1.5px solid var(--rule); }
+.diy-list a { border-bottom-style: dashed; }
+.pick h3, .upcoming-list h3, .diy-list h3 { font: 400 20px/1.2 var(--display); letter-spacing: -0.01em; }
+.pick h3 a:hover, .upcoming-list a:hover h3, .diy-list a:hover h3 { color: var(--blue); }
+.pick-when { font: 400 13px/1.7 var(--mono); }
+.pick-when a { color: var(--blue); font-weight: 500; }
+.upcoming-list .when, .diy-list .when { font: 500 13px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--red-ink); }
+.diy-list .when b { font: 500 14px var(--mono); color: var(--ink); }
+.upcoming-list .where, .diy-list .where { font: 500 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 .upcoming-list a:hover, .diy-list a:hover { background: var(--wash); box-shadow: -12px 0 0 var(--wash), 12px 0 0 var(--wash); }
-.area-head { border-bottom: 0; font-size: 30px; letter-spacing: -0.03em; margin-top: 64px; }
-.diy-block .day-head { border-bottom: 0; }
-.diy-stamp { text-transform: none; letter-spacing: .01em; font-size: 12px; }
+.diy-block .day-head { border-bottom: 3px dashed var(--ink); }
+.diy-stamp { border: 2px dashed var(--red-ink); color: var(--red-ink); font: 500 11px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .1em; }
 
-/* Footer: a tone step instead of a rule */
-footer { border-top: 0; margin-top: 120px; background: var(--wash); }
-footer .wrap { font-size: 14px; padding-block: 48px 64px; }
-footer .browse { border-bottom: 0; }
+/* Event, about and theater pages */
+.event h1 { font: 400 clamp(34px, 5.4vw, 60px)/1 var(--display); letter-spacing: -0.03em; }
+.event .eyebrow a { color: var(--blue); }
+.prose h2 { font: 400 26px/1.15 var(--display); text-transform: uppercase; letter-spacing: -0.02em; }
+.prose h3 { font: 500 13px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--red-ink); }
+.prose a, .about-page a, .theater-facts a { color: var(--blue); }
+.about-theaters li > a { font-weight: 700; }
+.theater-list li > a { font-weight: 700; color: var(--blue); }
+.theater-list .count, .about-theaters .hood, .theater-list .hood { font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.empty, .note { font-size: 16px; }
+
+/* Back to top */
+.to-top { font: 500 13px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); background: var(--card);
+  border: 2px solid var(--ink); border-radius: 0; box-shadow: 4px 4px 0 var(--blue); }
+.to-top:hover { background: var(--pink); }
+
+/* Footer: the dark lobby, with a blue bar on top and pink accents */
+footer { margin-top: 120px; border-top: 6px solid var(--blue); background: var(--ink); color: #D8CEC5; }
+footer .wrap { padding-block: 48px 64px; font: 400 14px/1.6 var(--sans); color: #D8CEC5; }
+footer b { color: var(--cream); font: 400 15px var(--display); letter-spacing: .02em; }
+footer a { color: var(--pink); }
+footer .browse { border-bottom: 0; gap: 8px 22px; padding-bottom: 20px; }
+footer .browse a { color: var(--pink); font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+footer :focus-visible { outline-color: var(--pink); }
 
 @media (max-width: 640px) {
-  .site-nav a { font-size: 15px; }  /* the larger desktop size wraps the nav to three rows on a phone */
-  .venue-head, .listings .venue-head { border-bottom: 0; }
-  .venue, .venue.diy { gap: 8px; grid-template-columns: minmax(0, 1fr); }
+  .logo-img { height: 48px; }
+  .tagline { font-size: 11px; max-width: 20ch; }
+  .site-nav { gap: 6px 16px; }
+  .site-nav a { font-size: 12.5px; letter-spacing: .05em; }
+  .site-nav .nav-end { margin-left: 0; }
+  .control-row .picker { flex: 1 1 140px; }
+  .picker summary { min-width: 0; }
+  .marquee-track { font-size: 12px; padding-block: 10px; }
+  .page-head { padding-top: 32px; }
+  .page-head h1 { font-size: 40px; }
+  .day { margin-top: 64px; }
+  .venue, .venue.diy { gap: 8px; grid-template-columns: minmax(0, 1fr); padding-top: 24px; }
+  .venue-head, .listings .venue-head { top: env(safe-area-inset-top, 0px); border-bottom: 1.5px solid var(--rule); }
   .film.has-poster { grid-template-columns: 56px minmax(0, 1fr); }
   .poster.small { width: 56px; height: 84px; }
-  .day { margin-top: 64px; }
+  .film h4 { font-size: 19px; }
+  .home-search .search, .home-search button { height: 46px; }
+  html { scroll-padding-top: 16px; }
 }
 
 /* Homepage DIY rail: a narrow newspaper column beside today's listings, in view from the first screen.
-   On a phone it becomes a strip of cards you swipe sideways, right under the headline. */
-.diy-rail { background: var(--wash); border-radius: 14px; padding: 20px 18px 18px; }
+   On a phone it becomes a strip of cards you swipe sideways, right under the headline.
+   Brand book: a white card with a black outline and a blue offset shadow; its sign is a dark marquee plate with a pink offset. */
+.diy-rail { background: var(--card); border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--blue); padding: 18px 18px 16px; }
 .diy-rail .diy-stamp { margin: 0 0 10px; }
-.diy-rail h2 { margin: 0 0 14px; font: 600 20px/1.2 var(--sans); letter-spacing: -0.02em; }
-/* The rail's label is a little neon sign: hot-pink glitter lettering on a dark plate that hums, shimmers and flickers. */
-.diy-rail .diy-sign { position: relative; overflow: hidden; margin: 0 0 14px; padding: 16px 16px 15px; border-radius: 10px;
-  background: radial-gradient(130% 150% at 50% 0%, #34102A 0%, #170812 70%);
-  box-shadow: inset 0 0 0 1px rgba(255, 92, 168, .28), inset 0 0 28px rgba(255, 46, 136, .2), 0 8px 22px -12px rgba(184, 52, 74, .55);
-  font: 700 29px/1 var(--sans); letter-spacing: -0.035em; text-transform: uppercase; }
-.diy-sign .neon { display: inline-block; color: #FF6FB6;
-  filter: drop-shadow(0 0 1.5px #FF4FA3) drop-shadow(0 0 9px rgba(255, 46, 136, .75)); }
-.diy-sign em { font: italic 400 1.1em/1 Georgia, "Times New Roman", serif; text-transform: none; letter-spacing: 0; padding: 0 .04em; }
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .diy-sign .neon { color: transparent; -webkit-background-clip: text; background-clip: text;
-    background:
-      radial-gradient(circle, #FFFFFF 0 .8px, transparent 1.3px) 0 0 / 9px 11px,
-      radial-gradient(circle, #FFD6EC 0 .7px, transparent 1.2px) 4px 6px / 13px 8px,
-      linear-gradient(100deg, #FF2E88 0%, #FF9AD2 25%, #FF2E88 50%, #FF9AD2 75%, #FF2E88 100%) 0 0 / 200% 100%;
-    -webkit-background-clip: text; background-clip: text; }
-}
-/* Glitter dust drifting over the plate. */
-.diy-sign::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .7;
-  background:
-    radial-gradient(circle, #FFF 0 1px, transparent 1.6px) 12% 22% / 100% 100% no-repeat,
-    radial-gradient(circle, #FFB3DA 0 1px, transparent 1.6px) 84% 18% / 100% 100% no-repeat,
-    radial-gradient(circle, #FFF 0 .8px, transparent 1.4px) 68% 82% / 100% 100% no-repeat,
-    radial-gradient(circle, #FF8CC6 0 .9px, transparent 1.5px) 28% 88% / 100% 100% no-repeat,
-    radial-gradient(circle, #FFF 0 .7px, transparent 1.3px) 94% 60% / 100% 100% no-repeat; }
-@media (prefers-reduced-motion: no-preference) {
-  .diy-sign .neon { animation: neon-shimmer 4s linear infinite, neon-hum 2.6s ease-in-out infinite alternate, diy-flicker 7s linear infinite; }
-  .diy-sign::after { animation: glitter-twinkle 2.2s steps(4) infinite; }
-  .diy-rail:hover .diy-sign .neon { animation-duration: 1.6s, 1.2s, 7s; }
-}
-@keyframes neon-shimmer {
-  from { background-position: 0 0, 4px 6px, 0 0; }
-  to   { background-position: 9px -11px, -9px 14px, -200% 0; }
-}
-@keyframes neon-hum {
-  from { filter: drop-shadow(0 0 1.5px #FF4FA3) drop-shadow(0 0 7px rgba(255, 46, 136, .55)); }
-  to   { filter: drop-shadow(0 0 2.5px #FF6FB6) drop-shadow(0 0 16px rgba(255, 46, 136, .95)); }
-}
-@keyframes glitter-twinkle {
-  0%, 100% { opacity: .75; transform: translate(0, 0); }
-  25% { opacity: .25; transform: translate(-3px, 2px); }
-  50% { opacity: .9; transform: translate(2px, -1px); }
-  75% { opacity: .4; transform: translate(-1px, -2px); }
-}
-.diy-rail ul { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.diy-rail li a { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; text-decoration: none; }
-.diy-rail li + li a { border-top: 1px dashed var(--step); }
-.diy-rail .when { font: 500 13px/1.3 var(--sans); color: var(--green); font-variant-numeric: tabular-nums; }
-.diy-rail .what { font: 600 15.5px/1.3 var(--sans); letter-spacing: -0.01em; color: var(--ink);
+.diy-rail h2 { margin: 0 0 14px; }
+/* The rail's label echoes the script logo: pink script letters in a red outline, a pale pink halo, and the blue shadow
+   falling up and to the left. The halo and shadow are a copy of the text (data-t) drawn behind it. */
+.diy-rail .diy-sign { margin: 4px 0 14px; padding: 0 0 0 6px; font: 400 42px/1.05 "Kaushan Script", var(--display); letter-spacing: 0; transform: rotate(-3deg); transform-origin: left center; }
+.diy-sign .script { white-space: pre-line; position: relative; isolation: isolate; display: inline-block; color: var(--pink); -webkit-text-stroke: 5px var(--red); paint-order: stroke fill; }
+.diy-sign .script::before { content: attr(data-t); content: attr(data-t) / ""; position: absolute; inset: 0; z-index: -1; color: var(--pink);
+  -webkit-text-stroke: 12px var(--pink); text-shadow: -4px -4px 0 var(--blue); }
+.diy-rail ul { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.diy-rail li a { display: flex; flex-direction: column; gap: 3px; padding: 12px 0; text-decoration: none; }
+.diy-rail li + li a { border-top: 1.5px dashed var(--rule); }
+.diy-rail .when { font: 500 12px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--red-ink); font-variant-numeric: tabular-nums; }
+.diy-rail .what { font: 400 16px/1.2 var(--display); letter-spacing: -0.01em; color: var(--ink);
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.diy-rail a:hover .what { text-decoration: underline; text-underline-offset: 3px; }
-.diy-rail .where { font: 400 13px/1.35 var(--sans); color: var(--muted); }
+.diy-rail a:hover .what { color: var(--blue); }
+.diy-rail .where { font: 500 11.5px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 @media (min-width: 1000px) {
   .home-grid.has-rail { display: grid; grid-template-columns: minmax(0, 1fr) 288px; column-gap: 48px; align-items: start; }
   .home-grid.has-rail > .page-head, .home-grid.has-rail > .home-main { grid-column: 1; }
@@ -479,12 +556,12 @@ footer .browse { border-bottom: 0; }
   .home-grid.has-rail .venue, .home-grid.has-rail .venue.diy { grid-template-columns: 190px minmax(0, 1fr); gap: 28px; }
 }
 @media (max-width: 999px) {
-  .diy-rail { margin-top: 20px; padding: 16px 0 14px 16px; }
-  .diy-rail h2 { font-size: 18px; margin-bottom: 8px; }
-  .diy-rail .diy-sign { margin-right: 16px; font-size: 25px; padding: 13px 14px 12px; }
+  .diy-rail { margin-top: 28px; padding: 16px 0 14px 16px; }
+  .diy-rail .diy-sign { margin-right: 20px; font-size: 34px; }
   .diy-rail ul { flex-direction: row; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-right: 16px; margin-bottom: 10px; scrollbar-width: none; }
   .diy-rail ul::-webkit-scrollbar { display: none; }
   .diy-rail li { flex: 0 0 210px; scroll-snap-align: start; }
-  .diy-rail li a { height: 100%; padding: 12px; border-radius: 10px; background: var(--paper); }
-  .diy-rail li + li a { border-top: 0; }
+  .diy-rail ul { padding: 2px 16px 6px 2px; }
+  .diy-rail li a { height: 100%; padding: 12px; border: 2px solid var(--ink); background: var(--cream); box-shadow: 3px 3px 0 var(--blue); }
+  .diy-rail li + li a { border-top: 2px solid var(--ink); }
 }

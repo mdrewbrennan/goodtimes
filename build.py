@@ -294,7 +294,7 @@ def actions_html(f, tmap):
     return f'<div class="actions">{"".join(acts)}</div>'
 
 
-LOGO = ROOT / "logo" / "goodtimes-script.png"
+LOGO = ROOT / "logo" / "goodtimes-script.png"  # the original script wordmark: use as is, never redrawn
 
 
 ICON = ROOT / "logo" / "goodtimes-icon.svg"
@@ -309,10 +309,20 @@ def favicon_uri():
 
 
 def logo_html():
-    """The script wordmark. Every so often it flickers like a neon sign (see .logo-img in style.css)."""
+    """The original script wordmark, shown as supplied (the brand book: never recreate, distort or add effects)."""
     if not LOGO.exists():
         return f'<span class="logo-text">{NAME}</span>'
     return f'<img class="logo-img" src="/goodtimes-logo.png" width="520" height="159" alt="{NAME}">'
+
+
+# The marquee: programming culture, not navigation. Decorative, so it's hidden from screen readers.
+MARQUEE = ["35mm &amp; 70mm", "Repertory classics", "Midnight movies", "One night only", "Special events",
+           "Q&amp;As &amp; guests", "Restorations", "Micro-cinemas", "Film festivals"]
+
+
+def marquee_html():
+    items = "".join(f"<span>{m}</span><i>✳</i>" for m in MARQUEE)
+    return f'<div class="marquee" aria-hidden="true"><div class="marquee-track">{items}{items}</div></div>'
 
 
 def json_ld(data):
@@ -364,7 +374,7 @@ def page(title, description, path, active, body, updated, script="", head="", in
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#FFF7EF">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{SITE_NAME}">
 <meta property="og:title" content="{title}">
@@ -376,7 +386,8 @@ def page(title, description, path, active, body, updated, script="", head="", in
 <meta property="og:image:alt" content="{NAME}: {TAGLINE}">'''}
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="{"summary" if image else "summary_large_image"}">
-<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin>
 {head}"""
     return f"""<!doctype html>
 <html lang="en-US">
@@ -398,6 +409,7 @@ def page(title, description, path, active, body, updated, script="", head="", in
   </div>
   <nav class="site-nav">{nav}</nav>
 </div></header>
+{marquee_html()}
 {body}
 <footer><div class="wrap">
   <nav class="browse" aria-label="Browse">{"".join(f'<a href="{h}">{label}</a>' for h, label in BROWSE)}{"".join(
@@ -681,7 +693,8 @@ def render_home(data, screenings, now):
         for ev in list(diy_films.values())[:7])
     diy_html = (f"""
   <aside class="diy-rail" aria-label="Underground and DIY screenings">
-    <h2 class="diy-sign"><span class="neon">Underground <em>&amp;</em> DIY</span></h2>
+    <h2 class="diy-sign"><span class="script" data-t="Underground&#10;&amp; DIY">Underground
+&amp; DIY</span></h2>
     <ul>{diy_rows}</ul>
     <a class="more" href="/diy/">More screenings →</a>
   </aside>""" if diy_rows else "")
@@ -689,7 +702,7 @@ def render_home(data, screenings, now):
     return f"""
 <main><div class="wrap home-grid{" has-rail" if diy_html else ""}">
   <header class="page-head">
-    <h1>Showings for {today.strftime("%A, %B %-d")}</h1>
+    <h1>Showings for <em>{today.strftime("%A")}</em>, {today.strftime("%B %-d")}</h1>
     <form class="home-search" action="/listings/" role="search">
       <input class="search" type="search" name="q" placeholder="Search every listing: films, directors, guests, 35mm…" aria-label="Search every listing">
       <button class="chip" type="submit">Search</button>
@@ -1825,8 +1838,11 @@ def main():
         "icon-512.png": ROOT / "logo" / "icon-512.png",
         "og-image.png": ROOT / "logo" / "og-image.png",
         "goodtimes-logo.png": LOGO,
-        "fonts/inter-latin.woff2": ROOT / "fonts" / "inter-latin.woff2",
-        "fonts/inter-latin-ext.woff2": ROOT / "fonts" / "inter-latin-ext.woff2",
+        "fonts/archivo-black-latin.woff2": ROOT / "fonts" / "archivo-black-latin.woff2",
+        "fonts/dm-sans-latin.woff2": ROOT / "fonts" / "dm-sans-latin.woff2",
+        "fonts/plex-mono-400-latin.woff2": ROOT / "fonts" / "plex-mono-400-latin.woff2",
+        "fonts/plex-mono-500-latin.woff2": ROOT / "fonts" / "plex-mono-500-latin.woff2",
+        "fonts/kaushan-script-latin.woff2": ROOT / "fonts" / "kaushan-script-latin.woff2",
         "fonts/OFL.txt": ROOT / "fonts" / "OFL.txt",
     }
     ico = favicon_ico((ROOT / "logo" / "favicon-48.png").read_bytes())

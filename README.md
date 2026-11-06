@@ -31,7 +31,9 @@ python3 -m http.server 8765 -d site   # the pages use site-root links, so serve 
   manifest and Netlify's `_redirects` and `_headers`.
 - `logo/`: the GOODTIMES wordmark and tab icon (`build_goodtimes.py` redraws the wordmark). The PNG icons and
   the link-preview card (`og-image.png`) are drawn from them by `render_images.sh`; rerun it after changing them.
-- `fonts/`: Inter, served from the site itself (SIL Open Font License, in `fonts/OFL.txt`).
+- `fonts/`: the brand typefaces, served from the site itself (SIL Open Font License, in `fonts/OFL.txt`):
+  Archivo Black for headlines, DM Sans for text, IBM Plex Mono for dates, times and labels, and Kaushan Script
+  for the Underground & DIY sign. The Inter files are no longer used.
 - `indexnow.py`: tells Bing and the search engines that share its index which pages changed.
 - `archive.py`: remembers every film listed so far, so a film's page outlives its last screening (see below).
 - `picks.md`: the weekly "Worth leaving the house for" picks, written by hand (see below).
