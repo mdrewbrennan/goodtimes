@@ -37,7 +37,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .tagline { margin: 0; padding-left: 16px; border-left: 1px solid var(--rule); font: 500 15px/1.3 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
 .logo { display: flex; align-items: center; min-height: 52px; text-decoration: none; min-width: 0; }
-.logo-svg { display: block; height: 52px; width: auto; max-width: 100%; }
+.logo-img { display: block; height: 56px; width: auto; max-width: 100%; animation: logo-neon 14s linear 1.5s infinite; }
+/* About every 14 seconds the wordmark acts like a neon sign: it glows, cuts out, sputters, flares white-hot and settles. */
+@keyframes logo-neon {
+  0%, 18%, 100% { filter: none; }
+  2%   { filter: brightness(1.05) drop-shadow(0 0 5px rgba(255, 80, 130, .55)); }
+  4%   { filter: brightness(.45) saturate(.7) drop-shadow(0 0 2px rgba(60, 80, 255, .4)); }
+  5.5% { filter: brightness(.3) saturate(.6); }
+  6.2% { filter: brightness(1.1) drop-shadow(0 0 6px rgba(255, 80, 130, .6)); }
+  6.8% { filter: brightness(.35) saturate(.6); }
+  8%   { filter: brightness(1.7) saturate(.5) drop-shadow(0 0 8px rgba(255, 120, 170, .9)) drop-shadow(0 0 20px rgba(150, 90, 255, .55)); }
+  9%   { filter: brightness(1.35) saturate(.7) drop-shadow(0 0 7px rgba(255, 110, 160, .8)) drop-shadow(0 0 16px rgba(150, 90, 255, .45)); }
+  12%  { filter: brightness(1.08) drop-shadow(0 0 6px rgba(255, 90, 140, .6)) drop-shadow(0 0 12px rgba(120, 90, 255, .3)); }
+}
+@media (prefers-reduced-motion: reduce) { .logo-img { animation: none; } }
 .logo-text { font: 700 26px/1 var(--sans); color: var(--green); text-transform: uppercase; }
 .site-nav { display: flex; flex-wrap: wrap; gap: 2px 22px; flex: 1 1 auto; justify-content: flex-end; }
 .site-nav .nav-end { margin-left: auto; }  /* "Who Is GT?" always sits at the far right */
@@ -308,11 +321,11 @@ footer b { color: var(--ink); font-family: var(--sans); font-weight: 600; letter
   .mast .wrap { padding-block: 8px; }
   .logo { min-width: 0; }
   .brand { gap: 12px; }
-  .logo-svg { height: 44px; }
+  .logo-img { height: 46px; }
   .tagline { padding-left: 12px; font-size: 13px; max-width: 17ch; }
   .mast .wrap { flex-wrap: wrap; row-gap: 6px; }
   .brand { flex: 1 1 100%; }
-  .logo-svg { flex: none; }
+  .logo-img { flex: none; }
   .site-nav { gap: 0 18px; justify-content: flex-start; }
   .page-head { padding-top: 16px; }
   .page-head h1 { font-size: 30px; }

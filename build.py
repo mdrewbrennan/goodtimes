@@ -292,7 +292,7 @@ def actions_html(f, tmap):
     return f'<div class="actions">{"".join(acts)}</div>'
 
 
-LOGO = ROOT / "logo" / "goodtimes-neon.svg"
+LOGO = ROOT / "logo" / "goodtimes-script.png"
 
 
 ICON = ROOT / "logo" / "goodtimes-icon.svg"
@@ -307,12 +307,10 @@ def favicon_uri():
 
 
 def logo_html():
-    """The wordmark, inlined so it ships inside each page (share.html has no neighbors to load it from)."""
+    """The script wordmark. Every so often it flickers like a neon sign (see .logo-img in style.css)."""
     if not LOGO.exists():
         return f'<span class="logo-text">{NAME}</span>'
-    svg = LOGO.read_text()
-    svg = re.sub(r'<rect [^>]*fill="#FFFFFF"\s*/>', "", svg)   # drop the white backdrop
-    return re.sub(r"<svg ", '<svg class="logo-svg" focusable="false" ', svg, count=1)
+    return f'<img class="logo-img" src="/goodtimes-logo.png" width="520" height="159" alt="{NAME}">'
 
 
 def json_ld(data):
@@ -1824,6 +1822,7 @@ def main():
         "icon-192.png": ROOT / "logo" / "icon-192.png",
         "icon-512.png": ROOT / "logo" / "icon-512.png",
         "og-image.png": ROOT / "logo" / "og-image.png",
+        "goodtimes-logo.png": LOGO,
         "fonts/inter-latin.woff2": ROOT / "fonts" / "inter-latin.woff2",
         "fonts/inter-latin-ext.woff2": ROOT / "fonts" / "inter-latin-ext.woff2",
         "fonts/OFL.txt": ROOT / "fonts" / "OFL.txt",
