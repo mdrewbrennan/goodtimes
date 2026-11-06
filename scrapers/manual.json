@@ -22,6 +22,20 @@
       "neighborhood": "Chinatown",
       "address": "422 Ord St",
       "url": "https://www.instagram.com/leroys_happy_place/"
+    },
+    {
+      "id": "garagecinema",
+      "name": "Garage Cinema",
+      "neighborhood": "Los Angeles (address on RSVP)",
+      "address": "Address sent on RSVP",
+      "url": "https://www.instagram.com/garagecinemala/"
+    },
+    {
+      "id": "barnsdall",
+      "name": "Barnsdall Gallery Theatre",
+      "neighborhood": "Los Feliz",
+      "address": "4800 Hollywood Blvd",
+      "url": "https://culture.lacity.gov/cultural-centers/barnsdall-gallery-theatre"
     }
   ],
   "screenings": [
@@ -33,6 +47,24 @@
       "year": 1984,
       "director": "Alex Cox",
       "blurb": "Circle Jerks x Repo Man: a full Circle Jerks set, then a Q&A with director Alex Cox, Zander Schloss, Dick Rude and Keith Morris, moderated by Jim Ruland, then a screening of the film."
+    },
+    {
+      "theater": "garagecinema",
+      "title": "Swiss Army Man",
+      "start": "2026-11-08 17:00",
+      "url": "https://partiful.com/e/MPsa70Y6hCX1JHVHGj4a",
+      "year": 2016,
+      "director": "Daniel Kwan, Daniel Scheinert",
+      "blurb": "Producers Miranda Bailey and Lauren Mann will be joining us in the Garage for a screening of the film, which they produced. Free RSVP on Partiful; the address is sent to guests."
+    },
+    {
+      "theater": "barnsdall",
+      "title": "3 Women",
+      "start": "2026-11-19 19:00",
+      "url": "https://secure.qgiv.com/for/hollyhockhouse/event/3women",
+      "year": 1977,
+      "director": "Robert Altman",
+      "blurb": "Hollyhock House presents Altman's 3 Women, selected by artist Milano Chow for her exhibitions Fantasy Street and Deborah Turbeville: The Lifted Veil, in partnership with Bel Ami. $5 tickets."
     }
   ]
 }

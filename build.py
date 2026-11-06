@@ -48,6 +48,7 @@ NETLIFY = ROOT / "netlify"  # drag this folder onto app.netlify.com/drop
 
 # Tags read from each screening's title and blurb. EVENT tags make a screening a special event.
 EVENT_TAGS = [
+    ("Shadow Kitchen", r"shadow kitchen"),  # Coaxial Arts' own screening series, named wherever it shows
     ("Live score", r"live score"),
     ("Recorded Q&A", r"(pre-recorded|livestream) q&a"),
     ("Guests in person", r"in person|in attendance|followed by a (conversation|q&a)|\bq&a\b|special guests|"
@@ -84,7 +85,7 @@ GENRE_NAMES = {"science fiction": "Sci-Fi", "sci-fi": "Sci-Fi", "biopic": "Biogr
 # DIY, underground and micro-cinemas: artist-run rooms, storefronts and pop-up series rather than cinemas
 # with a daily program. They get their own look, a DIY filter on the listings and a /diy/ page.
 DIY_THEATERS = {"whammy", "now-instant", "arts2220", "prs", "cinemasaloon", "veggiecloud", "muscle",
-                "coaxial", "humanresources", "roadhouse", "velaslavasay", "leroys"}
+                "coaxial", "humanresources", "roadhouse", "velaslavasay", "leroys", "garagecinema"}
 DIY_LABEL = "DIY · Micro-cinema"
 
 AREAS = ["Westside", "Hollywood & Mid-City", "Eastside", "Downtown", "Pasadena", "South Bay"]
@@ -110,6 +111,7 @@ GEO = {
     "redcat": ("Downtown", 34.0561, -118.2500), "velaslavasay": ("Downtown", 34.0342, -118.2869),
     "palace": ("Downtown", 34.0462, -118.2520),
     "eastwood": ("Hollywood & Mid-City", 34.0904, -118.3083), "leroys": ("Downtown", 34.0627, -118.2394),
+    "barnsdall": ("Eastside", 34.1003, -118.2946),
 }
 CITIES = {"Santa Monica", "Beverly Hills", "West Hollywood", "Pasadena", "Gardena"}  # neighborhoods that are their own city
 
