@@ -348,7 +348,7 @@ def site_graph():
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
 NAV = (("home", "/", "Today&rsquo;s Showings"), ("diy", "/diy/", "Underground &amp; DIY"),
-       ("listings", "/listings/", "All Listings"), ("about", "/about/", "About GoodTimes"))  # the last one sits at the far right
+       ("listings", "/listings/", "All Listings"), ("about", "/about/", "What is a goodtime?"))  # the last one sits at the far right
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
           ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
@@ -1633,13 +1633,15 @@ def render_about(data):
     return f"""
 <main><div class="wrap about">
   <header class="page-head">
-    <p class="eyebrow">Who Is GT?</p>
-    <h1>To live and watch movies in LA</h1>
+    <p class="eyebrow">About</p>
+    <h1>WHAT IS A GOODTIME?</h1>
   </header>
   <section class="prose">
     <p>I love movies. I love cinema. And I love film. If you have a special moving image playing somewhere
       &ndash; let me know! I&rsquo;m <a href="https://www.instagram.com/spacemania/" target="_blank"
       rel="noopener">@spacemania</a> on Instagram.</p>
+    <p>Thank you to <a href="https://www.saraswathi.xyz/" target="_blank" rel="noopener">Saraswathi</a> for the
+      design.</p>
     {contact}
   </section>
   <section class="prose">

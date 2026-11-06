@@ -511,7 +511,7 @@ footer :focus-visible { outline-color: var(--pink); }
 @media (max-width: 640px) {
   .logo-img { height: 48px; }
   .tagline { font-size: 11px; max-width: 20ch; }
-  .site-nav { gap: 6px 16px; }
+  .site-nav { gap: 6px 16px; align-items: flex-start; }  /* keep the stacked tabs down the left edge */
   .site-nav a { font-size: 12.5px; letter-spacing: .05em; }
   .site-nav .nav-end { margin-left: 0; }
   .control-row .picker { flex: 1 1 140px; }
