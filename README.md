@@ -41,7 +41,8 @@ python3 -m http.server 8765 -d site   # the pages use site-root links, so serve 
 
 Pages people search for, each with its screenings marked up as schema.org `ScreeningEvent`s:
 
-- a page per theater (`/theaters/<name>/`, its next 30 days) and a `/theaters/` index by area
+- a page per theater (`/theaters/<name>/`, its next 30 days) and a `/theaters/` index by area, topped by a map of
+  every theater (Leaflet and OpenStreetMap tiles, pins from `GEO`)
 - `/this-weekend/`, `/special-events/`, `/35mm/`, `/70mm/`, `/q-and-a/`, `/double-features/` (`COLLECTIONS`
   in `build.py`), and a page per area of town with two or more theaters (`/eastside/`, `/westside/`...)
 - a page per date (`/dates/YYYY-MM-DD/`, in search for the next 14 days) and a `/dates/` index; `/listings/`

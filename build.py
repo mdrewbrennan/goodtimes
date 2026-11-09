@@ -1331,8 +1331,54 @@ def render_theater_index(theaters, shows, today):
   </header>
   <section class="intro"><p class="about-page">Every theater {NAME} lists, by area of town, with what each has on
     over the next week. Each page has the full schedule, the address and a calendar feed.</p></section>
+  {theater_map(theaters, counts)}
   {rows}
 </div></main>"""
+
+
+LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist/leaflet"
+MAP_HEAD = (f'<link rel="stylesheet" href="{LEAFLET}.css" '
+            'integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">')
+
+
+def theater_map(theaters, counts):
+    """A map with a pin for every theater that has a page and coordinates in GEO. The list below it is the
+    fallback when scripts or the map tiles don't load."""
+    pins = [{"name": t["name"], "url": theater_path(t), "lat": GEO[t["id"]][1], "lng": GEO[t["id"]][2],
+             "hood": " · ".join(x for x in (t.get("operator"), t["neighborhood"]) if x),
+             "week": plural(counts.get(t["id"], 0), "screening") + " this week", "diy": t["id"] in DIY_THEATERS}
+            for t in theater_order(theaters) if has_page(t) and t["id"] in GEO]
+    data = json.dumps(pins).replace("</", "<\\/")
+    return f"""<section class="theater-map" aria-label="Map of the theaters">
+    <div id="theater-map" class="map-canvas" role="region" aria-label="Map of {len(pins)} theaters"></div>
+    <p class="map-key"><span class="key-pin"></span>Theater <span class="key-pin diy"></span>{DIY_LABEL}</p>
+  </section>
+  <script type="application/json" id="theater-pins">{data}</script>"""
+
+
+MAP_SCRIPT = f"""<script src="{LEAFLET}.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(() => {{
+  const el = document.getElementById("theater-map");
+  if (!el || !window.L) {{ el && el.parentElement.remove(); return; }}
+  const pins = JSON.parse(document.getElementById("theater-pins").textContent);
+  const map = L.map(el, {{ scrollWheelZoom: false, zoomSnap: 0.5 }});
+  L.tileLayer("https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png", {{
+    maxZoom: 19, className: "map-tiles",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }}).addTo(map);
+  const esc = s => s.replace(/[&<>"]/g, c => ({{"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}})[c]);
+  const marks = pins.map(p => L.marker([p.lat, p.lng], {{
+      title: p.name, alt: p.name, riseOnHover: true,
+      icon: L.divIcon({{ className: "map-pin" + (p.diy ? " diy" : ""), iconSize: [18, 18], iconAnchor: [9, 9], popupAnchor: [0, -10] }})
+    }}).bindPopup(`<a class="pop-name" href="${{p.url}}">${{esc(p.name)}}</a>`
+      + (p.hood ? `<span class="pop-hood">${{esc(p.hood)}}</span>` : "")
+      + `<span class="pop-week">${{esc(p.week)}}</span>`).addTo(map));
+  // Frame the city core; the Valley and South Bay outliers are a scroll away.
+  const core = pins.filter(p => p.lat > 33.98 && p.lat < 34.2 && p.lng > -118.52);
+  map.fitBounds(L.latLngBounds((core.length ? core : pins).map(p => [p.lat, p.lng])), {{ padding: [24, 24] }});
+}})();
+</script>"""
 
 
 def area_slug(a):
@@ -1390,7 +1436,8 @@ def collection_pages(data, screenings, tmap, today, updated):
     pages["/theaters/"] = page(f"LA Indie & Repertory Movie Theaters | {SITE_NAME}",
                                f"All {len(theaters)} Los Angeles indie and repertory movie theaters {NAME} lists, by "
                                "area, with addresses, schedules and calendar feeds.", "/theaters/", None,
-                               render_theater_index(theaters, screenings, today), updated, head=json_ld({"@graph": graph}))
+                               render_theater_index(theaters, screenings, today), updated,
+                               head=MAP_HEAD + json_ld({"@graph": graph}), script=MAP_SCRIPT)
 
     # This weekend
     fri, sun = weekend(today)
