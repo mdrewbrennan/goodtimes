@@ -295,6 +295,9 @@ def actions_html(f, tmap):
 
 
 LOGO = ROOT / "logo" / "goodtimes-script.png"  # the original script wordmark: use as is, never redrawn
+# The link-preview card's address carries a hash of the image, so a redrawn card gets a new address and
+# iMessage, Slack and the rest fetch it fresh instead of showing the one they cached.
+OG_IMAGE_VERSION = hashlib.sha256((ROOT / "logo" / "og-image.png").read_bytes()).hexdigest()[:8]
 
 
 ICON = ROOT / "logo" / "goodtimes-icon.svg"
@@ -380,7 +383,7 @@ def page(title, description, path, active, body, updated, script="", head="", in
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{url}">
-{f'<meta property="og:image" content="{escape(image)}">' if image else f'''<meta property="og:image" content="{SITE_URL}/og-image.png">
+{f'<meta property="og:image" content="{escape(image)}">' if image else f'''<meta property="og:image" content="{SITE_URL}/og-image.png?v={OG_IMAGE_VERSION}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="{NAME}: {TAGLINE}">'''}
