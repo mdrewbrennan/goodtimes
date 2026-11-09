@@ -1647,8 +1647,9 @@ def film_search_text(film, shows, tmap, today):
     facts = " · ".join(x for x in (str(film["year"]) if film.get("year") else None,
                                    f'dir. {film["director"]}' if film.get("director") else None,
                                    f'{film["runtime"]} min' if film.get("runtime") else None) if x)
-    how = (f", in {flag}" if flag in ("35mm", "70mm") else f", with a {flag}" if flag in ("Q&A", "double feature")
-           else f", with {flag}" if flag else "")
+    first = film_flag(shows[:1])  # the title's flag can come from any showing; this sentence is about the first
+    how = (f", in {first}" if first in ("35mm", "70mm") else f", with a {first}" if first in ("Q&A", "double feature")
+           else f", with {first}" if first else "")
     desc = fits([f'{film["title"]} plays {theater} on {day(start)} at {fmt_time(start)}{how}.',
                  f'Also {"; ".join(also)}{" and more" if len(others) > 3 else ""}.' if also else "",
                  f"{facts}." if facts else "",
