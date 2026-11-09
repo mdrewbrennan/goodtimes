@@ -1600,6 +1600,63 @@ def render_film(film, shows, tmap, today):
 </div></main>"""
 
 
+def film_flag(shows):
+    """What's special about these showings, for a search result: a print format, a Q&A, a double bill."""
+    ss = [s for _, s in shows]
+    if any("70mm" in s["format_tags"] for s in ss):
+        return "70mm"
+    if any("35mm" in s["format_tags"] for s in ss):
+        return "35mm"
+    if any(re.search(r"q&a", f'{s["title"]} {s.get("guests") or ""}', re.I) for s in ss):
+        return "Q&A"
+    if any("Guests in person" in s["event_tags"] for s in ss):
+        return "guests in person"
+    return "double feature" if any(is_double(s) for s in ss) else ""
+
+
+def fits(parts, limit, sep=""):
+    """parts joined in order of importance, skipping any that would push the text past limit (the first always stays)."""
+    out = parts[0]
+    for part in parts[1:]:
+        if part and len(out + sep + part) <= limit:
+            out += sep + part
+    return out
+
+
+def film_search_text(film, shows, tmap, today):
+    """(title, description) for a film's search result, leading with what people want: when and where.
+    Dates, not "tonight", since Google can show a title for days after a build. Each part goes in only while
+    there's room: about 80 characters of title (Google cuts the site name off first) and 160 of description."""
+    old = film.get("year") and str(film["year"]).isdigit() and int(film["year"]) < today.year - 1
+    name = f'{film["title"]} ({film["year"]})' if old else film["title"]
+    day = lambda dt: dt.strftime("%a %b %-d")
+    start, s = shows[0]
+    theater = tmap[s["theater"]]["name"]
+    days = list(OrderedDict.fromkeys(st.date() for st, _ in shows))
+    places = list(OrderedDict.fromkeys(x["theater"] for _, x in shows))
+    more = (f" + {plural(len(places) - 1, 'more theater')}" if len(places) > 1
+            else f" + {plural(len(days) - 1, 'more date')}" if len(days) > 1 else "")
+    flag = film_flag(shows)
+    title = fits([f"{name} in LA: {day(start)} at {theater}", f" ({flag})" if flag else "", more], 80)
+
+    others = OrderedDict()
+    for st, x in shows[1:]:
+        if (st.date(), x["theater"]) != (start.date(), s["theater"]):
+            others.setdefault((st.date(), x["theater"]), st)
+    also = [day(st) + (f' at {tmap[t]["name"]}' if len(places) > 1 else "") for (d, t), st in list(others.items())[:3]]
+    facts = " · ".join(x for x in (str(film["year"]) if film.get("year") else None,
+                                   f'dir. {film["director"]}' if film.get("director") else None,
+                                   f'{film["runtime"]} min' if film.get("runtime") else None) if x)
+    how = (f", in {flag}" if flag in ("35mm", "70mm") else f", with a {flag}" if flag in ("Q&A", "double feature")
+           else f", with {flag}" if flag else "")
+    desc = fits([f'{film["title"]} plays {theater} on {day(start)} at {fmt_time(start)}{how}.',
+                 f'Also {"; ".join(also)}{" and more" if len(others) > 3 else ""}.' if also else "",
+                 f"{facts}." if facts else "",
+                 s["guests"] if s.get("guests") else "",
+                 "Times and tickets."], 160, " ")
+    return title, desc
+
+
 def film_pages(arch, screenings, tmap, today, updated):
     """{path: html} for every film in the archive."""
     upcoming_by = OrderedDict()
@@ -1620,10 +1677,12 @@ def film_pages(arch, screenings, tmap, today, updated):
                  **({"director": {"@type": "Person", "name": film["director"]}} if film.get("director") else {}),
                  **({"image": film["poster"]} if film.get("poster") else {}),
                  **({"sameAs": film["tmdb"]} if film.get("tmdb") else {})}
-        if not shows:
+        if shows:
+            title, desc = film_search_text(film, shows, tmap, today)
+        else:
+            title = f"{label} in Los Angeles"
             UNLISTED.add(path)
-        pages[path] = page(f'{label} Showtimes in Los Angeles | {SITE_NAME}' if shows else f'{label} in Los Angeles | {SITE_NAME}',
-                           desc, path, None, render_film(film, shows, tmap, today), updated, indexable=bool(shows),
+        pages[path] = page(f"{title} | {SITE_NAME}", desc, path, None, render_film(film, shows, tmap, today), updated, indexable=bool(shows),
                            image=film.get("poster"),
                            head=json_ld({"@graph": [movie, breadcrumbs((label, path))] + events_ld(shows, tmap, path)}))
     return pages
