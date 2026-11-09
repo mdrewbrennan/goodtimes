@@ -359,7 +359,8 @@ MODIFIED = None  # when the listings were last gathered (ISO), set in main(); ev
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
 NAV = (("home", "/", "Today&rsquo;s Showings"), ("diy", "/diy/", "Underground &amp; DIY"),
-       ("listings", "/listings/", "All Listings"), ("about", "/about/", "What is a goodtime?"))  # the last one sits at the far right
+       ("listings", "/listings/", "All Listings"),
+       ("theaters", "/theaters/", "Theaters"), ("about", "/about/", "What is a goodtime?"))  # the last one sits at the far right
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
           ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/films/", "Films A to Z"), ("/dates/", "By date"))
@@ -1451,7 +1452,7 @@ def collection_pages(data, screenings, tmap, today, updated):
                  {"@type": "ListItem", "position": i, "item": theater_ld(t)} for i, t in enumerate(theater_order(theaters), 1)]}]
     pages["/theaters/"] = page(f"LA Indie & Repertory Movie Theaters | {SITE_NAME}",
                                f"All {len(theaters)} Los Angeles indie and repertory movie theaters {NAME} lists, by "
-                               "area, with addresses, schedules and calendar feeds.", "/theaters/", None,
+                               "area, with addresses, schedules and calendar feeds.", "/theaters/", "theaters",
                                render_theater_index(theaters, screenings, today), updated,
                                head=MAP_HEAD + json_ld({"@graph": graph}), script=MAP_SCRIPT)
 
