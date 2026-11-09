@@ -50,7 +50,10 @@ Pages people search for, each with its screenings marked up as schema.org `Scree
 - a page per film (`/films/<title>-<year>/`) with every upcoming screening across theaters, or, once its run
   ends, when and where it last screened (those pages stay out of search)
 
-For AI tools and anyone else, `/llms.txt` maps the site and `/listings.json` has every upcoming screening.
+For AI tools and anyone else, `/llms.txt` maps the site, `/llms-full.txt` has the next week of screenings as
+plain text, and `/listings.json` has every upcoming screening. `/films/` lists every film coming up, A to Z.
+How often the site updates is `UPDATE_SCHEDULE` in `build.py`, so every page says it the same way. See
+`LLM_STRATEGY.md` for the plan behind these.
 
 Besides those, the build writes an About page (`/about/`), a page per festival
 (`/festivals/<name>/`), a page per film per day for share links (`/e/<id>/`), an `.ics` file per screening

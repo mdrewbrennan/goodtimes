@@ -36,6 +36,9 @@ LA = ZoneInfo("America/Los_Angeles")  # handles daylight saving; used for "today
 NAME = "GOODTIMES"        # the wordmark
 SITE_NAME = "GOODTIMES LA"  # the name search engines, link previews and titles use
 TAGLINE = "To Live and Watch Movies in LA"
+# When the daily refresh rebuilds the site (.github/workflows/daily-refresh.yml). Every page says it the same way,
+# since search engines and AI tools trust a site less when its pages disagree.
+UPDATE_SCHEDULE = "twice a day (7am and 3pm Pacific)"
 # While friends test the site, ask search engines not to list it. Set to False at launch.
 PREVIEW = False
 # The public address, for canonical links, the sitemap and link previews. Netlify sets URL to the site's
@@ -324,7 +327,8 @@ MARQUEE = ["35mm &amp; 70mm", "Repertory classics", "Midnight movies", "One nigh
 
 
 def marquee_html():
-    items = "".join(f"<span>{m}</span><i>✳</i>" for m in MARQUEE)
+    # The words are drawn by CSS from data-t, so they stay out of the page text that search engines and AI tools read.
+    items = "".join(f'<span data-t="{m}"></span><i></i>' for m in MARQUEE)
     return f'<div class="marquee" aria-hidden="true"><div class="marquee-track">{items}{items}</div></div>'
 
 
@@ -342,19 +346,23 @@ def site_graph():
     return {"@graph": [
         {"@type": "Organization", "@id": org, "name": SITE_NAME, "alternateName": NAME, "url": f"{SITE_URL}/",
          "logo": {"@type": "ImageObject", "url": f"{SITE_URL}/icon-512.png", "width": 512, "height": 512},
-         **({"sameAs": SAME_AS} if SAME_AS else {})},
+         **({"sameAs": SAME_AS} if SAME_AS else {}),
+         **({"founder": {"@type": "Person", "@id": f"{SITE_URL}/#founder", **FOUNDER}} if FOUNDER["name"] else {})},
         {"@type": "WebSite", "@id": site, "name": SITE_NAME, "alternateName": NAME, "url": f"{SITE_URL}/",
          "description": DEFAULT_DESCRIPTION, "inLanguage": "en-US", "publisher": {"@id": org}},
     ]}
 
 
+# The person behind the site, for the About page's structured data. Shown only once "name" is filled in.
+FOUNDER = {"name": "Maggie Drew", "alternateName": "spacemania", "sameAs": ["https://www.instagram.com/spacemania/"]}
+MODIFIED = None  # when the listings were last gathered (ISO), set in main(); every page's dateModified
 SAME_AS = []  # the site's own profiles (Instagram, Letterboxd, Bluesky...), so search engines tie them together
 DEFAULT_DESCRIPTION = "Repertory, indie and one-night-only film across Los Angeles, gathered daily from each theater's own site."
 NAV = (("home", "/", "Today&rsquo;s Showings"), ("diy", "/diy/", "Underground &amp; DIY"),
        ("listings", "/listings/", "All Listings"), ("about", "/about/", "What is a goodtime?"))  # the last one sits at the far right
 # Every page's footer links to the collection pages, so search engines (and people) can find them from anywhere.
 BROWSE = (("/this-weekend/", "This weekend"), ("/special-events/", "Special events"), ("/diy/", "DIY & micro-cinemas"), ("/theaters/", "All theaters"), ("/35mm/", "35mm"), ("/70mm/", "70mm"),
-          ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/dates/", "By date"))
+          ("/q-and-a/", "Q&amp;As and guests"), ("/double-features/", "Double features"), ("/picks/", "Weekly picks"), ("/films/", "Films A to Z"), ("/dates/", "By date"))
 USES_TMDB = False  # set in main() when any film has TMDB data, which means the footer must credit TMDB
 
 
@@ -365,6 +373,11 @@ def page(title, description, path, active, body, updated, script="", head="", in
     nav = "".join(f'<a href="{href}"{nav_class(key)}{" aria-current=page" if key == active else ""}>{label}</a>'
                   for key, href, label in NAV)
     url = SITE_URL + path
+    if MODIFIED and indexable and not share:  # tells crawlers how fresh the listings on this page are
+        head = json_ld({"@type": "AboutPage" if path == "/about/" else "WebPage", "@id": url, "url": url,
+                        "name": title, "dateModified": MODIFIED, "inLanguage": "en-US",
+                        "isPartOf": {"@id": f"{SITE_URL}/#website"},
+                        **({"about": {"@id": f"{SITE_URL}/#organization"}} if path == "/about/" else {})}) + head
     title, description = escape(title), escape(description)
     if share:  # claude.ai shows this page itself, so it gets the embedded icon and none of the search tags
         meta = f'<link rel="icon" type="image/svg+xml" href="{favicon_uri()}">'
@@ -981,7 +994,7 @@ COMMON_SCRIPT = """<script>
     catch { prompt("Copy this link:", b.dataset.url); }
   });
 
-  // The site is built once a morning, so showtimes that have started are dropped here in the browser: in a day's
+  // The site is built twice a day, so showtimes that have started are dropped here in the browser: in a day's
   // list, a film whose showtimes have all started goes away, then a theater with nothing left, then the day.
   // Elsewhere (a film's own page) started showtimes are only dimmed. Checked again every minute.
   function dropStarted() {
@@ -1304,8 +1317,8 @@ def render_theater(t, shows, tmap, today):
     note = f'<p>{escape(THEATER_NOTES[t["id"]])}</p>' if t["id"] in THEATER_NOTES else ""
     eyebrow = " · ".join(escape(x) for x in (t.get("operator"), t["neighborhood"], area(t)) if x)
     return collection_page(escape(t["name"]), eyebrow, shows, tmap, today, counted,
-                           f'Showtimes for {escape(t["name"])}, gathered every morning from the theater&rsquo;s own '
-                           f'site. Tickets are sold by the theater.', f'Nothing listed at {escape(t["name"])} in the '
+                           f'Showtimes for {escape(t["name"])}, gathered {UPDATE_SCHEDULE} from the theater&rsquo;s '
+                           f'own site. Tickets are sold by the theater.', f'Nothing listed at {escape(t["name"])} in the '
                            f'next {THEATER_DAYS} days. Check the theater&rsquo;s own site for later dates.',
                            solo=True, extra=note + facts)
 
@@ -1428,7 +1441,7 @@ def collection_pages(data, screenings, tmap, today, updated):
         path = theater_path(t)
         hood = f'{t["neighborhood"]}, {city(t)}' if city(t) != t["neighborhood"] else t["neighborhood"]
         desc = (f'What\'s playing at {t["name"]} ({t["address"]}, {hood}): {plural(len(shows), "upcoming screening")}'
-                f', with showtimes and tickets. Updated every morning.')
+                f', with showtimes and tickets. Updated {UPDATE_SCHEDULE}.')
         graph = [theater_ld(t), breadcrumbs(("Theaters", "/theaters/"), (t["name"], path))] + events_ld(shows, tmap, path)
         pages[path] = page(f'{t["name"]} Showtimes & Schedule | {SITE_NAME}', desc, path, None,
                            render_theater(t, shows, tmap, today), updated, head=json_ld({"@graph": graph}))
@@ -1445,11 +1458,13 @@ def collection_pages(data, screenings, tmap, today, updated):
     # This weekend
     fri, sun = weekend(today)
     shows = [x for x in screenings if fri <= x[0].date() <= sun]
-    dates = f'{fri.strftime("%b %-d")}–{sun.strftime("%-d") if fri.month == sun.month else sun.strftime("%b %-d")}'
+    dates = (sun.strftime("%A, %b %-d") if fri == sun  # on a Sunday only Sunday is left
+             else f'{fri.strftime("%b %-d")}–{sun.strftime("%-d") if fri.month == sun.month else sun.strftime("%b %-d")}')
     k = len({s["theater"] for _, s in shows})
     special = sum(1 for _, s in shows if s["is_special"])
+    span = sun.strftime("%A, %B %-d") if fri == sun else f'{fri.strftime("%A, %B %-d")} to {sun.strftime("%A, %B %-d")}'
     counted = (f'{plural(len(shows), "screening")} at {k} LA indie and repertory theater{"" if k == 1 else "s"} this weekend, '
-               f'{fri.strftime("%A, %B %-d")} to {sun.strftime("%A, %B %-d")}'
+               f'{span}'
                f'{", including " + plural(special, "special event") if special else ""}.')
     path = "/this-weekend/"
     pages[path] = page(f"LA Movies This Weekend, {dates}: Indie & Repertory Screenings | {SITE_NAME}",
@@ -1468,10 +1483,10 @@ def collection_pages(data, screenings, tmap, today, updated):
                    if shows else "")
         path = f"/{key}/"
         desc = (f'{plural(len(shows), *what)} at {plural(k, "Los Angeles theater")}, with dates, times and tickets. '
-                'Updated every morning.') if shows else re.sub(r"<[^>]+>", "", about)[:150]  # no link markup in a description
+                f'Updated {UPDATE_SCHEDULE}.') if shows else re.sub(r"<[^>]+>", "", about)[:150]  # no link markup in a description
         pages[path] = page(f"{title} | {SITE_NAME}", desc, path, "diy" if key == "diy" else None,
                            collection_page(heading, eyebrow, shows, tmap, today, counted, about,
-                                           f"Nothing is listed right now. New screenings are added every morning.",
+                                           f"Nothing is listed right now. New screenings are added {UPDATE_SCHEDULE}.",
                                            **({"count": False, "cls": "diy-page"} if key == "diy" else {})),
                            updated, head=json_ld({"@graph": [breadcrumbs((heading, path))] + events_ld(shows, tmap, path)}))
 
@@ -1689,7 +1704,59 @@ def film_pages(arch, screenings, tmap, today, updated):
     return pages
 
 
+def sort_key(title):
+    return re.sub(r"^(the|a|an) ", "", re.sub(r"[^\w ]", "", title.lower()).strip())
+
+
+def films_index(screenings, tmap, today, updated):
+    """/films/: every film with an upcoming screening, A to Z, with when and where it plays next."""
+    first = OrderedDict()
+    for start, s in screenings:
+        if film_key(s) in FILM_PATHS and has_page(tmap[s["theater"]]):
+            first.setdefault(film_key(s), (start, s, set()))[2].add(start.date())
+    films = sorted(first.values(), key=lambda x: sort_key(display_title(x[1]["title"])))
+    letters = OrderedDict()
+    for start, s, days in films:
+        letter = sort_key(display_title(s["title"]))[:1].upper()
+        letters.setdefault(letter if letter.isalpha() else "#", []).append((start, s, days))
+    def row(start, s, days):
+        facts = " · ".join(str(x) for x in (s["year"], s["director"] and "dir. " + s["director"]) if x)
+        when = day_label(start.date(), today) + ("" if start.date() - today < timedelta(days=2) else start.strftime(", %b %-d"))
+        more = f' (+{plural(len(days) - 1, "more day")})' if len(days) > 1 else ""
+        return (f'<li><a href="{FILM_PATHS[film_key(s)]}">{escape(display_title(s["title"]))}</a>'
+                + (f'<span class="hood">{escape(facts)}</span>' if facts else "")
+                + f'<span>Next: {when} at {fmt_time(start)}, {escape(tmap[s["theater"]]["name"])}{more}</span></li>')
+
+    rows = "".join(f'<h2>{letter}</h2><ul class="about-theaters">{"".join(row(*x) for x in group)}</ul>'
+                   for letter, group in letters.items())
+    body = f"""
+<main><div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">Films A to Z</p>
+    <h1>Every film screening in LA</h1>
+  </header>
+  <p class="note">{plural(len(films), "film")} coming up at Los Angeles indie and repertory theaters, with the next
+    time each one plays. Each links to its page with every screening.</p>
+  <section class="prose">{rows}</section>
+</div></main>"""
+    graph = [breadcrumbs(("Films", "/films/")),
+             {"@type": "ItemList", "numberOfItems": len(films), "itemListElement": [
+                 {"@type": "ListItem", "position": i, "url": SITE_URL + FILM_PATHS[film_key(s)], "name": s["title"]}
+                 for i, (_, s, _) in enumerate(films, 1)]}]
+    return page(f"Films Screening in LA, A to Z | {SITE_NAME}",
+                f"All {len(films)} films coming up at Los Angeles indie and repertory theaters, A to Z, with the next "
+                "screening of each. Times and tickets.", "/films/", None, body, updated, head=json_ld({"@graph": graph}))
+
+
 # ---------- for answer engines and other tools ----------
+
+USING_THE_DATA = [
+    "## Using this data", "",
+    "- Times are America/Los_Angeles. Screenings are added, sell out and get cancelled, so give the date with any "
+    "time and link to the screening's page or ticket link rather than repeating a time on its own.",
+    "- Tickets are sold by each theater, never by GOODTIMES; ticket links go straight to the theater.",
+    f"- The site is rebuilt {UPDATE_SCHEDULE} from each theater's own website.",
+    "- Please cite GOODTIMES LA with a link to the page you used.", ""]
 
 def listings_json(data, screenings, tmap, scraped):
     """Every upcoming screening as plain JSON at /listings.json, for anyone (or any AI tool) to read."""
@@ -1714,7 +1781,7 @@ def listings_json(data, screenings, tmap, scraped):
     }, ensure_ascii=False, separators=(",", ":")) + "\n"
 
 
-def llms_txt(data, collections):
+def llms_txt(data, collections, scraped):
     """/llms.txt: a plain-text map of the site for AI tools (the llmstxt.org format)."""
     theaters = [t for t in theater_order(data["theaters"]) if has_page(t)]
     pages = [(p, re.sub(r"<[^>]+>", "", re.search(r"<title>(.*?) \| ", html).group(1)).replace("&amp;", "&").replace("&#x27;", "'"))
@@ -1724,15 +1791,20 @@ def llms_txt(data, collections):
         f"> {TAGLINE}. What's playing at {len(theaters)} Los Angeles independent and repertory movie theaters: "
         "revivals, new indies, 35mm and 70mm prints, Q&As, festivals and one-night-only screenings. Rebuilt twice a "
         "day (7am and 3pm Pacific) from each theater's own website; tickets are sold by the theaters.", "",
-        "Every listing page marks up its screenings as schema.org ScreeningEvent. Times are America/Los_Angeles.", "",
+        f"Updated {scraped.astimezone(LA).strftime('%A, %B %-d, %Y at %-I:%M%p').replace('AM', 'am').replace('PM', 'pm')} Pacific. "
+        "Every listing page marks up its screenings as schema.org ScreeningEvent.", "",
+        f"For the whole week in one file, read [llms-full.txt]({SITE_URL}/llms-full.txt).", "",
+        *USING_THE_DATA,
         "## Listings", "",
         f"- [Showing today]({SITE_URL}/): today's screenings, upcoming special events and the weekly picks",
         f"- [All listings]({SITE_URL}/listings/): the next week, day by day, with filters",
         *[f"- [{title}]({SITE_URL}{p})" for p, title in pages],
+        f"- [Films A to Z]({SITE_URL}/films/): every film with an upcoming screening and when it plays next",
         f"- [Weekly picks]({SITE_URL}/picks/): a short, hand-written list of screenings worth leaving the house for", "",
         "## Theaters", "",
         *[f'- [{t["name"]}]({SITE_URL}{theater_path(t)}): {t["address"]}, {t["neighborhood"]}' for t in theaters], "",
         "## Data", "",
+        f"- [llms-full.txt]({SITE_URL}/llms-full.txt): the next {LISTINGS_DAYS} days of screenings as plain text, by day and theater",
         f"- [listings.json]({SITE_URL}/listings.json): every upcoming screening as JSON (title, theater, start time, "
         "director, format, guests, sold out, ticket link)",
         f"- [Special events calendar]({SITE_URL}/cal/special-events.ics): iCalendar feed; each theater has one at "
@@ -1740,6 +1812,36 @@ def llms_txt(data, collections):
         f"- [About]({SITE_URL}/about/)", "",
         "Each film has a page at /films/<title>-<year>/ with every upcoming screening across theaters, or when and "
         "where it last screened.", ""])
+
+
+def llms_full_txt(screenings, tmap, today, scraped):
+    """/llms-full.txt: the next week of screenings in plain text, so an AI tool can answer from one fetch."""
+    stamp = scraped.astimezone(LA).strftime("%A, %B %-d, %Y at %-I:%M%p").replace("AM", "am").replace("PM", "pm")
+    out = [f"# {SITE_NAME}: every screening, {today.strftime('%B %-d')} to "
+           f"{(today + timedelta(days=LISTINGS_DAYS - 1)).strftime('%B %-d, %Y')}", "",
+           f"> Updated {stamp} Pacific. What's playing at Los Angeles independent and repertory movie theaters, "
+           f"gathered from each theater's own website. The site map is at {SITE_URL}/llms.txt.", "",
+           *USING_THE_DATA,
+           "Each line: time, title (year, director, runtime), formats and tags, guests, then the ticket link.", ""]
+    days = OrderedDict()
+    for start, s in screenings:
+        if start.date() - today < timedelta(days=LISTINGS_DAYS) and has_page(tmap[s["theater"]]):
+            days.setdefault(start.date(), OrderedDict()).setdefault(s["theater"], []).append((start, s))
+    for day, venues in days.items():
+        out += [f"## {day.strftime('%A, %B %-d')}", ""]
+        for tid in sorted(venues, key=lambda t: tmap[t]["name"]):
+            t = tmap[tid]
+            out += [f'### {t["name"]} ({t["address"]}, {t["neighborhood"]}) {SITE_URL}{theater_path(t)}', ""]
+            for start, x in venues[tid]:
+                facts = ", ".join(str(v) for v in (x["year"] or (x.get("tmdb") or {}).get("year"), x["director"] and "dir. " + x["director"],
+                                                   x["runtime"] and f'{x["runtime"]} min') if v)
+                tags = ", ".join(x["format_tags"] + [tag for tag in x["event_tags"] if tag not in x["format_tags"]]
+                                 + (["SOLD OUT"] if x["sold_out"] else []))
+                out.append(f'- {fmt_time(start)}: {display_title(x["title"])}{f" ({facts})" if facts else ""}'
+                           f'{f" [{tags}]" if tags else ""}{" " + x["guests"].rstrip(".") + "." if x.get("guests") else ""}'
+                           f' Tickets: {x["ticket_url"]}')
+            out.append("")
+    return "\n".join(out)
 
 
 def render_about(data):
@@ -1775,8 +1877,8 @@ def render_about(data):
     <p>I built this for my friends and myself because it&rsquo;s just been a pain in the ass to figure out where
       all the special film events are. I missed LA Loves a Car Chase at Coaxial, but because I made this website
       I get to see it. That&rsquo;s cool.</p>
-    <p>Updated every morning at 7am from each theater&rsquo;s own website and puts the day&rsquo;s screenings in
-      one place. Tickets are always sold by the theater, so the times link straight to them.</p>
+    <p>It puts the day&rsquo;s screenings in one place, gathered {UPDATE_SCHEDULE} from each theater&rsquo;s own
+      website. Tickets are always sold by the theater, so the times link straight to them.</p>
   </section>
   <section class="prose">
     <h2>Put it in your calendar</h2>
@@ -1840,6 +1942,7 @@ def headers():
     out += "/e/*\n  X-Robots-Tag: noindex\n"
     out += "/listings.json\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=3600\n"
     out += "/llms.txt\n  Content-Type: text/plain; charset=utf-8\n"
+    out += "/llms-full.txt\n  Content-Type: text/plain; charset=utf-8\n  Access-Control-Allow-Origin: *\n"
     out += "/archive.json\n  X-Robots-Tag: noindex\n"  # the build's memory of past films (see archive.py)  # screening pages are for sharing; they expire after the day
     if PREVIEW:  # keep images and other files out of search too, not just the pages
         out += "/*\n  X-Robots-Tag: noindex, nofollow\n"
@@ -1869,6 +1972,8 @@ def main():
     AREA_PAGES.update(a for a in AREAS if places.count(a) >= 2)
     scraped = datetime.fromisoformat(data["scraped_at"])
     updated = scraped.astimezone(LA).strftime("%b %-d, %-I:%M%p").lower().capitalize()
+    global MODIFIED
+    MODIFIED = scraped.isoformat(timespec="seconds")
 
     tonight = [s for start, s in screenings if start.date() == today]
     venues = len({s["theater"] for s in tonight})
@@ -1932,6 +2037,7 @@ def main():
 
     collections = collection_pages(data, screenings, tmap, today, updated)
     films = film_pages(arch, screenings, tmap, today, updated)
+    films["/films/"] = films_index(screenings, tmap, today, updated)
     for path, html in {**collections, **films}.items():
         generated[path.strip("/") + "/index.html"] = html
 
@@ -1951,7 +2057,8 @@ def main():
         "_redirects": redirects(),
         "_headers": headers(),
         "listings.json": listings_json(data, screenings, tmap, scraped),
-        "llms.txt": llms_txt(data, collections),
+        "llms.txt": llms_txt(data, collections, scraped),
+        "llms-full.txt": llms_full_txt(screenings, tmap, today, scraped),
         "archive.json": archive.dump(arch),
         f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY + "\n",
     }
