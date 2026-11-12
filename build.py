@@ -259,10 +259,18 @@ def poster_html(film, size="small"):
     # TMDB's poster when the film matched; otherwise the image the theater publishes with its listing.
     src = (film.get("tmdb") or {}).get("poster") or film.get("image")
     if not src:
-        return ""
-    # A poster that fails to load is removed by COMMON_SCRIPT, so the row falls back to its no-poster layout.
+        # No image anywhere: a title card in the poster's place, so every row in a list lines up the same way.
+        # (A film's own page already has its title as the headline, so the large size just leaves it out.)
+        return poster_fallback(film["title"]) if size == "small" else ""
+    # A small poster that fails to load is swapped for the title card by COMMON_SCRIPT (it reads data-title);
+    # a large one is removed, so the page falls back to its no-poster layout.
     return (f'<img class="poster {size}" src="{escape(src)}" alt="" loading="lazy" decoding="async" '
-            f'referrerpolicy="no-referrer">')
+            f'referrerpolicy="no-referrer" data-title="{escape(film["title"])}">')
+
+
+def poster_fallback(title):
+    """The stand-in for a missing poster: the film's title set like a title card, ink on cream's opposite."""
+    return f'<span class="poster small fallback" aria-hidden="true"><span>{escape(title)}</span></span>'
 
 
 def slug(text):
@@ -661,24 +669,69 @@ def render_picks_page(week, days, tmap, today):
 </div></main>"""
 
 
+HOME_THIN = 5         # fewer showings than this left today and the homepage shows tomorrow too
+ON_FILM_COUNT = 6     # films in the homepage's "On film this week" section
+
+
+def render_on_film(days, tmap, today):
+    """With no picks written for the week, the homepage still gets a short list with a point of view: the next
+    week's showings projected on film (35mm, 16mm, 70mm), one entry per film, soonest first. It is labeled for
+    what it is, so it never passes for the hand-written picks."""
+    end = today + timedelta(days=7)
+    films = OrderedDict()
+    for day, venues in days.items():
+        if day >= end:
+            continue
+        for fs in venues.values():
+            for f in fs.values():
+                if f["format_tags"]:
+                    films.setdefault(film_key(f), []).append(f)
+    if not films:
+        return ""
+    items = []
+    for shows in list(films.values())[:ON_FILM_COUNT]:
+        first = shows[0]
+        when = "".join(
+            f'<li><a href="/e/{event_id(f)}/">{day_label(f["times"][0][0].date(), today)} '
+            f'{f["times"][0][0].strftime("%b %-d")}</a> · {escape(tmap[f["theater"]]["name"])} · '
+            f'{", ".join(fmt_time(t) for t, _ in f["times"])}</li>' for f in shows[:3])
+        more = f'<li class="muted">+{len(shows) - 3} more</li>' if len(shows) > 3 else ""
+        formats = "".join(f'<span class="tag format">{t}</span>' for t in sorted({t for f in shows for t in f["format_tags"]}))
+        items.append(f'<li class="pick has-poster">{poster_html(first)}<div>'
+                     f'<span class="tags">{formats}</span><h3>{film_link(first)}</h3>'
+                     f'{meta_html(first)}<ul class="pick-when">{when}{more}</ul></div></li>')
+    return (f'<section class="picks on-film"><div class="day-head"><h2>On film this week</h2>'
+            f'<span class="count">35mm · 16mm · 70mm</span></div>'
+            f'<ol class="pick-list">{"".join(items)}</ol>'
+            f'<p class="upcoming-foot"><a class="more" href="/35mm/">Every 35mm showing →</a></p></section>')
+
+
 def render_home(data, screenings, now):
     today = now.date()
     tmap = {t["id"]: t for t in data["theaters"]}
     days = by_day(screenings, theater_order(data["theaters"]))
     week = read_picks(today)
     picks_html = render_picks(week, days, tmap, today) if week else ""
+    on_film_html = "" if week else render_on_film(days, tmap, today)
 
+    # Today and tomorrow are both on the page. HOME_SCRIPT decides, by the clock in LA, which to show: today
+    # alone while there's plenty left; tomorrow under it once today is thin (fewer than HOME_THIN showings to
+    # come, or past 8pm); and tomorrow alone once today is over, including after midnight on a page built the
+    # afternoon before. Without the script, today shows with a link to the listings.
+    tomorrow = today + timedelta(days=1)
+    today_html = ""
     if today in days:
-        # With picks between the page title and today's list, the list needs its own "Today" heading.
-        today_html, n, _ = day_section(today, days[today], tmap, today, heading=bool(week), blurbs=False)
-        # Shown by the script once every showing today has started.
-        today_html += ('<p class="note" id="done-today" hidden>Everything today has started. '
-                       '<a class="more" href="/listings/">See what&rsquo;s on tomorrow →</a></p>')
-    else:
-        n, nxt = 0, next(iter(days), None)
-        today_html = '<p class="note">Nothing else on screen today.' + (
-            f' Next up: {day_label(nxt, today)}, {nxt.strftime("%b %-d")}. '
-            f'<a class="more" href="/listings/">See listings →</a>' if nxt else "") + '</p>'
+        today_html, n, _ = day_section(today, days[today], tmap, today, blurbs=False)
+    if tomorrow in days:
+        html, _, _ = day_section(tomorrow, days[tomorrow], tmap, today, blurbs=False)
+        today_html += html.replace('<section class="day"', '<section class="day home-next" hidden', 1)
+    # Filled in by the script: what's still to come, and the way on to the rest of the week.
+    today_html = (f'<div class="now" id="now" data-thin="{HOME_THIN}">'
+                  f'<p class="now-note note" id="now-note" hidden></p>{today_html}'
+                  '<p class="upcoming-foot now-more"><a class="more" href="/listings/">See the whole week →</a></p></div>')
+    if not days:
+        today_html = ('<p class="note">Nothing is listed right now. New screenings are added '
+                      f'{UPDATE_SCHEDULE}.</p>')
 
     # One row per film: its next special showing after today, plus how many other dates it has.
     films = OrderedDict()
@@ -730,6 +783,7 @@ def render_home(data, screenings, now):
   <div class="home-main">
   {picks_html}
   {today_html}
+  {on_film_html}
   <section class="upcoming">
     <div class="day-head"><h2>Upcoming special events</h2></div>
     <ul class="upcoming-list">{rows or '<li class="note">No special events posted right now.</li>'}</ul>
@@ -776,6 +830,9 @@ def render_listings(data, screenings, now):
 <h1 class="visually-hidden">Indie and repertory film listings in Los Angeles</h1>
 <nav class="controls" aria-label="Filter listings"><div class="wrap">
   <div class="control-row">
+    <button class="chip filters-toggle" id="filters-toggle" type="button" aria-expanded="false" aria-controls="filter-panel">Filters<span class="filters-n" id="filters-n"></span></button>
+    <input class="search" id="search" type="search" placeholder="Search films, directors, guests, 35mm…" aria-label="Search listings">
+    <div class="filter-panel" id="filter-panel" role="group" aria-label="Filters">
     <details class="picker" id="theaters" data-all="All theaters" data-unit="theaters">
       <summary class="select">All theaters</summary>
       <div class="menu" role="group" aria-label="Theaters">
@@ -793,7 +850,8 @@ def render_listings(data, screenings, now):
     <button class="chip" id="special" type="button" aria-pressed="false">Special events</button>
     <button class="chip chip-diy" id="diy" type="button" aria-pressed="false">DIY</button>
     <button class="chip" id="near" type="button" aria-pressed="false">Near me</button>
-    <input class="search" id="search" type="search" placeholder="Search films, directors, guests, 35mm…" aria-label="Search listings">
+    <button class="link-button clear-all" id="clear-all" type="button" hidden>Clear all</button>
+    </div>
   </div>
   <p class="near-status" id="near-status" hidden></p>
   <div class="days">{"".join(nav)}<a class="later" href="/dates/"><span>Later</span>→</a></div>
@@ -861,6 +919,28 @@ LISTINGS_SCRIPT = """<script>
       any ||= dayVisible;
     });
     document.getElementById("no-results").hidden = any;
+
+    // The Filters button (phones) says how many are on; "Clear all" shows once any are.
+    const active = chosen.size + genres.size + onlySpecial + onlyDiy + pressed(near);
+    document.getElementById("filters-n").textContent = active ? ` · ${active}` : "";
+    clearAll.hidden = !(active || q);
+    save(q, chosen, genres, onlySpecial, onlyDiy);
+  }
+
+  // Filters live in the address (?theater=aero,vidiots&genre=Horror&special=1&q=…), so a filtered view can be
+  // bookmarked or sent to a friend, and coming Back to the page brings it back. Near me isn't saved: it needs
+  // the location permission each time. A day link's #d… anchor is kept.
+  function save(q, chosen, genres, onlySpecial, onlyDiy) {
+    const params = new URLSearchParams();
+    if (chosen.size) params.set("theater", [...chosen].join(","));
+    if (genres.size) params.set("genre", [...genres].join(","));
+    if (onlySpecial) params.set("special", "1");
+    if (onlyDiy) params.set("diy", "1");
+    if (q) params.set("q", q);
+    const query = params.toString().replace(/%2C/g, ",");
+    const hash = /^#d\d{4}-/.test(location.hash) || location.hash.startsWith("#f-") ? location.hash : "";
+    const url = location.pathname + (query ? "?" + query : "") + hash;
+    if (url !== location.pathname + location.search + location.hash) history.replaceState(history.state, "", url);
   }
 
   for (const p of pickers) {
@@ -902,6 +982,7 @@ LISTINGS_SCRIPT = """<script>
       venues.forEach(v => { v.querySelector(".dist").hidden = true; });
       sortVenues(v => +v.dataset.order);
       nearStatus.hidden = true;
+      apply();
       return;
     }
     if (!navigator.geolocation) { nearStatus.hidden = false; nearStatus.textContent = "This browser can't share your location."; return; }
@@ -919,6 +1000,7 @@ LISTINGS_SCRIPT = """<script>
       sortVenues(v => +v.dataset.dist);
       press(near, true);
       nearStatus.hidden = true;
+      apply();
     }, () => {
       nearStatus.textContent = "Couldn't get your location. Check that this site is allowed to use it.";
     }, { maximumAge: 600000, timeout: 15000 });
@@ -938,17 +1020,96 @@ LISTINGS_SCRIPT = """<script>
 
   // /listings/?q=… searches (the homepage search box sends people here). /listings/#special turns the
   // special events filter on (#diy the DIY one); /listings/#<theater id> picks a theater; /listings/#f-<id> is one film.
-  const q = new URLSearchParams(location.search).get("q");
-  if (q) search.value = q;
+  const params = new URLSearchParams(location.search);
+  const listed = key => (params.get(key) || "").split(",").filter(Boolean);
+  if (params.get("q")) search.value = params.get("q");
+  if (params.has("theater") || params.has("genre")) {
+    const want = [new Set(listed("theater")), new Set(listed("genre"))];
+    pickers.forEach((p, i) => p.boxes.forEach(b => { b.checked = want[i].has(b.value); }));
+  }
+  press(special, params.get("special") === "1");
+  press(diy, params.get("diy") === "1");
+
+  // Phones: the theater and genre menus and the toggles fold away behind one Filters button.
+  const toggle = document.getElementById("filters-toggle"), controls = document.querySelector(".controls");
+  toggle.addEventListener("click", () => {
+    const open = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    controls.classList.toggle("filters-open", open);
+  });
+  const clearAll = document.getElementById("clear-all");
+  clearAll.addEventListener("click", () => {
+    pickers.forEach(p => p.boxes.forEach(b => { b.checked = false; }));
+    press(special, false);
+    press(diy, false);
+    if (pressed(near)) near.click();
+    search.value = "";
+    apply();
+  });
+  // The filter bar stays pinned on a phone; a theater's name pins just under it.
+  const setBarHeight = () => document.documentElement.style.setProperty("--controls-h", controls.offsetHeight + "px");
+  if ("ResizeObserver" in window) new ResizeObserver(setBarHeight).observe(controls);
+  setBarHeight();
+
   function fromHash() {
     const hash = location.hash.slice(1);
+    const filter = hash === "special" || hash === "diy" || theaterPicker.boxes.some(b => b.value === hash);
     if (hash === "special") press(special, true);
     else if (hash === "diy") press(diy, true);
-    else if (theaterPicker.boxes.some(b => b.value === hash)) theaterPicker.boxes.forEach(b => { b.checked = b.value === hash; });
+    else if (filter) theaterPicker.boxes.forEach(b => { b.checked = b.value === hash; });
+    if (filter) history.replaceState(history.state, "", location.pathname + location.search);  // apply() puts it in ?…
     apply();
   }
   window.addEventListener("hashchange", fromHash);
   fromHash();
+</script>"""
+
+
+HOME_SCRIPT = """<script>
+  // Homepage: which of today and tomorrow to show, by the clock in Los Angeles (see render_home). Runs again
+  // every minute, after COMMON_SCRIPT drops the showtimes that have started.
+  (() => {
+    const box = document.getElementById("now");
+    if (!box) return;
+    const thin = +box.dataset.thin;
+    const sections = [...box.querySelectorAll(".day")];
+    const note = document.getElementById("now-note");
+    const h1 = document.querySelector(".page-head h1");
+    const laDate = d => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d);  // 2026-11-08
+    const laHour = d => +new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", hourCycle: "h23" }).format(d);
+    const nextDay = iso => new Date(Date.parse(iso + "T12:00:00Z") + 864e5).toISOString().slice(0, 10);
+    const dayOf = s => s.id.slice(1);
+    const left = s => s.querySelectorAll(".film:not(.past) .time:not(.past)").length;
+    const says = (iso, opts) => new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", ...opts });
+    function show(s, label) {
+      s.hidden = false;
+      const h = s.querySelector(".day-head h2"), count = s.querySelector(".day-head .count"), n = left(s);
+      if (h && h.firstChild && h.firstChild.nodeType === 3) h.firstChild.textContent = label;
+      if (count) count.textContent = label === "Today" || label === "Tonight" ? `${n} still to come` : `${n} screening${n === 1 ? "" : "s"}`;
+    }
+    function update() {
+      const now = new Date(), today = laDate(now), hour = laHour(now);
+      const live = sections.filter(s => dayOf(s) >= today && left(s) > 0);
+      sections.forEach(s => { s.hidden = true; });
+      const [first, second] = live;
+      let msg = "";
+      if (first && dayOf(first) === today) {
+        show(first, hour >= 17 ? "Tonight" : "Today");
+        if (second && (left(first) < thin || hour >= 20)) show(second, dayOf(second) === nextDay(today) ? "Tomorrow" : says(dayOf(second), { weekday: "long" }));
+      } else if (first) {
+        show(first, dayOf(first) === nextDay(today) ? "Tomorrow" : says(dayOf(first), { weekday: "long" }));
+        msg = "Everything today has started.";
+      } else {
+        msg = "Everything on this page has started. The whole week is in the listings.";
+      }
+      note.hidden = !msg;
+      note.textContent = msg;
+      // The headline names the first day shown, so a page built yesterday afternoon still reads right at 1am.
+      if (first && h1) h1.innerHTML = `Showings for <em>${says(dayOf(first), { weekday: "long" })}</em>, ${says(dayOf(first), { month: "long", day: "numeric" })}`;
+    }
+    update();
+    document.addEventListener("started", update);
+  })();
 </script>"""
 
 
@@ -969,13 +1130,22 @@ COMMON_SCRIPT = """<script>
       if (e.key === "Escape" && mast.classList.contains("open")) { set(false); button.focus(); }
     });
   })();
-  // A poster that fails to load (errors don't bubble, so this listens on the way down).
+  // A poster that fails to load (errors don't bubble, so this listens on the way down). A small one becomes
+  // the same title card a film with no poster gets; a large one goes, and its page drops to the no-poster layout.
   document.addEventListener("error", e => {
     const img = e.target;
-    if (img.tagName === "IMG" && img.classList.contains("poster")) {
-      img.closest(".has-poster")?.classList.remove("has-poster");
-      img.remove();
+    if (img.tagName !== "IMG" || !img.classList.contains("poster")) return;
+    if (img.classList.contains("small") && img.dataset.title) {
+      const card = document.createElement("span"), inner = document.createElement("span");
+      card.className = "poster small fallback";
+      card.setAttribute("aria-hidden", "true");
+      inner.textContent = img.dataset.title;
+      card.appendChild(inner);
+      img.replaceWith(card);
+      return;
     }
+    img.closest(".has-poster")?.classList.remove("has-poster");
+    img.remove();
   }, true);
   function flash(button, text) {
     const old = button.textContent;
@@ -1993,7 +2163,7 @@ def main():
     graph = site_graph()
     graph["@graph"] += events_ld([x for x in screenings if x[0].date() == today], tmap, "/")
     home = page(f"LA Indie & Repertory Movie Showtimes Today | {SITE_NAME}", home_description, "/", "home",
-                home_body, updated, head=json_ld(graph))
+                home_body, updated, HOME_SCRIPT, head=json_ld(graph))
     listings = page(f"All Upcoming Indie & Repertory Screenings in LA | {SITE_NAME}", listings_description,
                     "/listings/", "listings", render_listings(data, screenings, now), updated, LISTINGS_SCRIPT)
     not_found = page(f"Page not found | {SITE_NAME}", DEFAULT_DESCRIPTION, "/404.html", None, NOT_FOUND, updated,

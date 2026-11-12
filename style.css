@@ -611,3 +611,38 @@ footer :focus-visible { outline-color: var(--pink); }
 .leaflet-popup-content .pop-hood, .leaflet-popup-content .pop-week { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .leaflet-container a.leaflet-popup-close-button { color: var(--ink); }
 @media (max-width: 640px) { .map-canvas { height: 60vh; box-shadow: 4px 4px 0 var(--blue); } }
+
+/* A film with no poster: its title set like a title card, so every row in a list lines up the same way. */
+.poster.fallback { display: flex; align-items: flex-end; padding: 8px 5px 7px; overflow: hidden; background: var(--ink); outline: 0;
+  box-shadow: inset 0 5px 0 var(--red); }
+.poster.fallback span { font: 400 10.5px/1.12 var(--display); color: var(--cream); text-transform: uppercase; letter-spacing: 0;
+  overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Homepage: today and tomorrow (the script picks which show) and the "On film this week" list. */
+.now-note { padding-top: 28px; }
+.on-film .tags { display: flex; margin-bottom: 4px; }
+.on-film .meta { margin: 0 0 8px; }
+
+/* Listings filters. On a wide screen they sit in one row as before; the Filters button only shows on a phone. */
+.filters-toggle { display: none; }
+.filter-panel { display: contents; }
+.control-row > .search { order: 2; }
+.clear-all { white-space: nowrap; }
+@media (max-width: 640px) {
+  /* One line (Filters + search) and the day strip, pinned while you scroll; the rest opens under the button. */
+  .controls { position: sticky; top: 0; z-index: 20; }
+  .controls.filters-open { position: static; }
+  .controls .wrap { padding-block: 12px 10px; gap: 10px; }
+  .control-row > .filters-toggle { display: inline-flex; align-items: center; flex: 0 0 auto; padding: 0 14px; }
+  .filters-toggle[aria-expanded="true"] { background: var(--pink); }
+  .control-row > .search { order: 0; flex: 1 1 0; min-width: 0; margin: 0; }
+  .filter-panel { display: none; }
+  .controls.filters-open .filter-panel { display: flex; flex-wrap: wrap; gap: 10px; flex-basis: 100%; padding-top: 4px; }
+  .filter-panel > .chip { flex: 1 1 auto; padding: 0 8px; white-space: nowrap; font-size: 12px; letter-spacing: .04em; }
+  .clear-all { flex-basis: 100%; text-align: left; padding: 4px 0; background: none; border: 0; }
+  .days a { min-width: 52px; padding: 6px 8px 5px; font-size: 17px; }
+  .listings .venue-head { top: var(--controls-h, 0px); }
+  html { scroll-padding-top: calc(var(--controls-h, 0px) + 12px); }
+}
+.day-head .date, .day-head .count { white-space: nowrap; }
+.day-head { flex-wrap: wrap; }
